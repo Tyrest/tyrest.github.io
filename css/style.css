@@ -1,0 +1,205 @@
+/* import fonts from fonts.css file */
+@import url(./fonts.css);
+
+/* import variables from variables.css file */
+@import url(./partials/_variables.css);
+
+/* global styles */
+body {
+    background-color: var(--dark-background-color);
+    color: var(--light-inactive-color);
+}
+
+.background-primary {
+    background-color: var(--primary);
+}
+
+.hidden {
+    opacity: 0;
+    filter: blur(5px);
+    transform: translateX(-100%);
+    transition: transform 1s, opacity 1s, filter 1s;
+}
+
+@media(prefers-reduced-motion) {
+    .hidden {
+        transition: none;
+    }
+}
+
+.show {
+    opacity: 1;
+    filter: blur(0);
+    transform: translateX(0);
+}
+
+.hover-shadow:hover {
+    box-shadow: 0 0 10px 0 var(--primary);
+}
+
+.top-spacer {
+    margin-top: 8rem;
+}
+
+/* start header area */
+
+.spacer {
+    aspect-ratio: 960/300;
+    width: 100%;
+    background-repeat: no-repeat;
+    background-position: center;
+    background-size: cover;
+}
+
+.layered-waves-1 {
+    background-image: url(../img/layered-waves-1.svg);
+}
+
+/* start navigation area */
+
+.header_area .main-menu .navbar {
+    background-color: var(--dark-background-color-transparent);
+    /* opacity: 0.9; */
+}
+
+.header_area .main-menu .navbar .navbar-brand {
+    font: 600 2.5rem var(--ubuntu-mono);
+    color: var(--title-color);
+}
+
+.header_area .main-menu .navbar .nav-link {
+    font: 600 1.5rem var(--ubuntu-mono);
+    color: var(--light-inactive-color);
+    padding: 0rem 2rem;
+    transition: all 0.3s;
+}
+
+/* underline on hover effect
+.header_area .main-menu .navbar .nav-link::after {
+    content: "";
+    display: block;
+    width: 0;
+    height: 2px;
+    background-color: var(--light-inactive-color);
+    color: var(--gradient-color);
+    transition: width 0.3s;
+}
+
+.header_area .main-menu .navbar .nav-link:hover::after {
+    width: 100%;
+    left: 0;
+} */
+
+/* .header_area .main-menu .navbar a {
+    background: var(--gradient-color);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+} */
+
+.header_area {
+    margin: 0px;
+    height: 100%;
+}
+
+/* end navigation area */
+
+/* start hero section */
+
+.header_area .hero .hero-title {
+    font: 600 4.5rem var(--ubuntu-mono);
+    color: var(--hero-color);
+}
+
+.header_area .hero {
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+    height: 90%;
+}
+
+.header_area .hero .hero-message {
+    font: 500 2.5rem;
+    color: var(--bs-gray-800);
+}
+
+/* end hero section */
+
+/* end header area */
+
+/* start main area */
+
+/* start features area */
+
+#skills .feature:nth-child(2) {
+    transition-delay: 250ms;
+}
+
+#skills .feature:nth-child(3) {
+    transition-delay: 500ms;
+}
+
+/* end features area */
+
+/* start skills area */
+
+.site-main #technologies {
+    padding: 2rem 2rem;
+    height: 100%;
+}
+
+.site-main #technologies .skill {
+    padding: 2rem 0rem;
+    aspect-ratio: 1/1;
+    height: 100%;
+    background-repeat: no-repeat;
+    background-position: center;
+    background-size: contain;
+    transition: transform 0.3s, filter 0.3s;
+}
+
+.simple-hover-effect:hover {
+    transform: scale(1.1);
+    filter:
+        saturate(1.2)
+        brightness(1.2)
+}
+
+.site-main #motivation {
+    padding: 2rem 0rem;
+}
+
+.site-main #motivation .featurette {
+    padding: 2rem 0rem;
+}
+
+.site-main #motivation .featurette .featurette-heading {
+    font: 600 3.5rem var(--ubuntu-mono);
+    margin-top: 7rem;
+}
+
+p > .gradient-text {
+    animation: background-pan 3s linear infinite;
+    background: linear-gradient(to right, #B3CBB9, #84A9C0, #6A66A3, #B3CBB9);
+    background-size: 200%;
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    white-space: nowrap;
+    background-clip: text;
+}
+
+@keyframes background-pan {
+    0% {
+        background-position: 0%;
+    }
+    100% {
+        background-position: -200%;
+    }
+}
+
+/* start contact area */
+
+.site-main #contact {
+    padding: 2rem 0rem;
+}
