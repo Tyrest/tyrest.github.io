@@ -74,6 +74,16 @@ body {
     transition: all 0.3s;
 }
 
+#tyblog a {
+    text-decoration: none;
+    transition: color 0.3s;
+}
+
+#tyblog a:hover {
+    color: var(--primary);
+    text-decoration: none;
+}
+
 /* underline on hover effect
 .header_area .main-menu .navbar .nav-link::after {
     content: "";
