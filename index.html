@@ -1,227 +1,177 @@
 <!DOCTYPE html>
 <html lang="en">
-
 <head>
     <meta charset="UTF-8">
-    <meta http-equiv="X-UA-Compatible" content="IE=edge">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Tyler Ho</title>
-
-
-    <!-- Bootstrap css file -->
-    <link rel="stylesheet" href="./css/bootstrap.min.css">
-
-    <!-- font awesome icons -->
-    <link rel="stylesheet" href="./css/all.min.css">
-
-    <!-- Bootstrap js file -->
-    <script defer src="./js/app.js"></script>
-
-    <!-- custom css file -->
-    <link rel="stylesheet" href="./css/style.css">
-
-    <!-- fontawesome -->
-    <script src="https://kit.fontawesome.com/91d453b24d.js" crossorigin="anonymous"></script>
+    <title>Project Index</title>
+    <style>
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+            max-width: 800px;
+            margin: 0 auto;
+            padding: 2rem;
+            background-color: #f4f4f9;
+            color: #333;
+        }
+        h1 {
+            text-align: center;
+            color: #2c3e50;
+            margin-bottom: 2rem;
+        }
+        .page-list {
+            list-style: none;
+            padding: 0;
+        }
+        .page-item {
+            background: white;
+            margin-bottom: 1rem;
+            padding: 0;
+            border-radius: 8px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+            transition: transform 0.2s, box-shadow 0.2s;
+            overflow: hidden;
+        }
+        .page-item:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 8px rgba(0,0,0,0.15);
+        }
+        .page-link {
+            text-decoration: none;
+            color: #2c3e50;
+            display: block;
+            padding: 1.5rem;
+        }
+        .page-title {
+            font-size: 1.25rem;
+            font-weight: 600;
+            display: block;
+            margin-bottom: 0.5rem;
+        }
+        .page-path {
+            display: block;
+            color: #7f8c8d;
+            font-size: 0.9rem;
+            font-family: monospace;
+        }
+        .loading {
+            text-align: center;
+            color: #666;
+            margin-top: 2rem;
+            font-style: italic;
+        }
+        .error {
+            text-align: center;
+            color: #e74c3c;
+            margin-top: 2rem;
+            padding: 1rem;
+            background: #fdecea;
+            border-radius: 8px;
+        }
+    </style>
 </head>
-
 <body>
+    <h1>Project Index</h1>
+    <ul class="page-list" id="project-list"></ul>
+    <div id="loading" class="loading">Loading projects from GitHub...</div>
 
-    <!-- ===================== Start Header Area ===================== -->
+    <script>
+        // Configuration
+        const REPO_OWNER = 'Tyrest';
+        const REPO_NAME = 'tyrest.github.io';
+        const BRANCH = 'master'; // Using 'master' based on your git config
 
-    <header class="header_area background-primary">
-        <div class="main-menu sticky-top">
-            <nav class="navbar navbar-expand-lg col-md-12">
-                <div class="container">
-                    <span class="navbar-brand mb-0 h1">Tyler Ho</span>
-                    <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav"
-                        aria-controls="navbarNav" aria-expanded="false" aria-label="Toggle navigation">
-                        <span class="navbar-toggler-icon"></span>
-                    </button>
-                    <div class="collapse navbar-collapse justify-content-end" id="navbarNav">
-                        <ul class="navbar-nav">
-                            <li class="nav-item">
-                                <a class="nav-link simple-hover-effect" href="#skills">Skills</a>
-                            </li>
-                            <li class="nav-item">
-                                <a class="nav-link simple-hover-effect" href="#technologies">Technologies</a>
-                            </li>
-                            <li class="nav-item">
-                                <a class="nav-link simple-hover-effect" href="#motivation">Motivation</a>
-                            </li>
-                            <li class="nav-item">
-                                <a class="nav-link simple-hover-effect" href="https://tyblog.tech">TyBlog</a>
-                            </li>
-                        </ul>
-                    </div>
-                </div>
-            </nav>
-        </div>
+        async function fetchProjects() {
+            const list = document.getElementById('project-list');
+            const loading = document.getElementById('loading');
+            
+            try {
+                // 1. Fetch the contents of the 'pages' directory using GitHub API
+                const response = await fetch(`https://api.github.com/repos/${REPO_OWNER}/${REPO_NAME}/contents/pages`);
+                
+                if (!response.ok) {
+                    if (response.status === 403) {
+                        throw new Error('GitHub API rate limit exceeded. Please try again later.');
+                    } else if (response.status === 404) {
+                        throw new Error('Pages directory not found in the repository.');
+                    }
+                    throw new Error(`GitHub API Error: ${response.statusText}`);
+                }
+                
+                const contents = await response.json();
+                
+                // 2. Filter for directories only
+                const directories = contents.filter(item => item.type === 'dir');
+                
+                loading.style.display = 'none';
 
-        <div class="hero col-md-12">
-            <div class="container-fluid">
-                <h3 class="hero-title col-lg-6 mx-auto display-5 text-center col-md-12">
-                    Code Composer,<br>Backend Engineer
-                </h3>
-                <div class="hero-message col-lg-5 mx-auto text-center">
-                    <p class="lead mb-4">Backend engineer for ML infrastructure, web, and more
-                        with an emphasis on efficient improvement and iteration. Continually
-                        learning with the end goal of leaving a lasting positive impact on the world by
-                        utilizing the bleeding edge of technology.</p>
-                </div>
-            </div>
-        </div>
-    </header>
+                if (directories.length === 0) {
+                    const emptyMsg = document.createElement('div');
+                    emptyMsg.style.textAlign = 'center';
+                    emptyMsg.textContent = 'No projects found in pages/ directory.';
+                    document.body.appendChild(emptyMsg);
+                    return;
+                }
 
-    <!-- ====================== End Header Area ====================== -->
+                // 3. Create list items
+                for (const dir of directories) {
+                    const li = document.createElement('li');
+                    li.className = 'page-item';
+                    
+                    // Default title is the folder name
+                    let title = dir.name;
+                    // Construct the path to the page
+                    const pagePath = `pages/${dir.name}/index.html`;
+                    
+                    // Create the link element
+                    const link = document.createElement('a');
+                    link.href = pagePath;
+                    link.className = 'page-link';
+                    
+                    const titleSpan = document.createElement('span');
+                    titleSpan.className = 'page-title';
+                    titleSpan.textContent = title; // Initial text
+                    
+                    const pathSpan = document.createElement('span');
+                    pathSpan.className = 'page-path';
+                    pathSpan.textContent = `pages/${dir.name}`;
+                    
+                    link.appendChild(titleSpan);
+                    link.appendChild(pathSpan);
+                    li.appendChild(link);
+                    list.appendChild(li);
 
-    <div class="spacer layered-waves-1"></div>
+                    // 4. Attempt to fetch the real <title> from the raw HTML
+                    // We do this asynchronously for each item so the list appears fast
+                    const rawUrl = `https://raw.githubusercontent.com/${REPO_OWNER}/${REPO_NAME}/${BRANCH}/pages/${encodeURIComponent(dir.name)}/index.html`;
+                    
+                    fetch(rawUrl)
+                        .then(res => {
+                            if (!res.ok) throw new Error('Failed to fetch raw file');
+                            return res.text();
+                        })
+                        .then(html => {
+                            const match = html.match(/<title>(.*?)<\/title>/i);
+                            if (match && match[1]) {
+                                titleSpan.textContent = match[1].trim();
+                            }
+                        })
+                        .catch(err => {
+                            // Silently fail if we can't get the title, just keep the folder name
+                            console.debug(`Could not fetch title for ${dir.name}`, err);
+                        });
+                }
+                
+            } catch (error) {
+                loading.style.display = 'none';
+                const errorDiv = document.createElement('div');
+                errorDiv.className = 'error';
+                errorDiv.innerHTML = `<strong>Error loading projects:</strong><br>${error.message}<br><br><small>Note: This page uses the GitHub API and requires the repository to be public and pushed to GitHub.</small>`;
+                document.body.appendChild(errorDiv);
+            }
+        }
 
-    <!-- ====================== Start Main Area ====================== -->
-
-    <main class="site-main">
-        <div id="skills" class="col-md-12">
-            <div class="container py-5">
-                <h2 class="pb-2 border-bottom hidden">Key Skills</h2>
-                <div class="row g-4 py-5 row-cols-1 row-cols-lg-3">
-                    <div class="feature col d-flex align-items-start hidden">
-                        <div
-                            class="icon-square d-inline-flex align-items-center justify-content-center fs-4 flex-shrink-0 me-3">
-                            <i class="fas fa-gears"></i>
-                        </div>
-                        <div>
-                            <h3 class="fs-2">Backend Development</h3>
-                            <p>Extensive experience with AWS lambdas and APIs. Able to create data
-                                pipelines and automate processes through the use of AWS services
-                                such as Sagemaker and RDS. Familiar with CI/CD pipelines through
-                                the use of Github Actions. Experience with implementing testing
-                                infrastructure through the use of Pytest and Github Actions.
-                            </p>
-                        </div>
-                    </div>
-                    <div class="feature col d-flex align-items-start hidden">
-                        <div
-                            class="icon-square d-inline-flex align-items-center justify-content-center fs-4 flex-shrink-0 me-3">
-                            <i class="fas fa-users"></i>
-                        </div>
-                        <div>
-                            <h3 class="fs-2">Community-oriented</h3>
-                            <p>1+ years of working with a close team at an early stage startup.
-                                4+ years of teaching experience through private tutoring and
-                                mentoring for RPI CS classes. 3+ years of leadership experience
-                                managing and guiding VRC robotics club of 30+ members.
-                            </p>
-                        </div>
-                    </div>
-                    <div class="feature col d-flex align-items-start hidden">
-                        <div class="d-inline-flex align-items-center justify-content-center fs-4 flex-shrink-0 me-3">
-                            <i class="fas fa-bolt"></i>
-                        </div>
-                        <div>
-                            <h3 class="fs-2">Adaptability</h3>
-                            <p>Always seeking to broaden knowledge and increase productivity.
-                                Able to quickly learn new technologies and adapt to new
-                                environments. 4+ years of experience with Python, Java, and
-                                C++. 3+ years of experience with Machine Learning technologies.
-                                1+ years of experience with AWS technologies. Currently
-                                learning Rust and web technologies.
-                            </p>
-                        </div>
-                    </div>
-                </div>
-            </div>
-        </div>
-
-        <div id="technologies" class="py-5 col-lg-12">
-            <h1 class="text-center my-4">
-                Technologies
-            </h1>
-            <div class="container mb-5 col-md-6">
-                <div class="row row-cols-3 row-cols-lg-6 justify-content-center">
-                    <div class="col p-3">
-                        <div class="skill simple-hover-effect" style="background-image: url(./icons/brands/aws_logo.svg);"></div>
-                    </div>
-                    <div class="col p-3">
-                        <div class="skill simple-hover-effect" style="background-image: url(./icons/brands/python_logo.svg);"></div>
-                    </div>
-                    <div class="col p-3">
-                        <div class="skill simple-hover-effect" style="background-image: url(./icons/brands/postgreSQL_logo.svg);"></div>
-                    </div>
-                    <div class="col p-3">
-                        <div class="skill simple-hover-effect" style="background-image: url(./icons/brands/C++_logo.svg);"></div>
-                    </div>
-                    <div class="col p-3">
-                        <div class="skill simple-hover-effect"
-                            style="background-image: url(./icons/brands/rust_logo.svg); filter: invert(100%);"></div>
-                    </div>
-                    <div class="col p-3">
-                        <div class="skill simple-hover-effect" style="background-image: url(./icons/brands/docker_logo.webp);"></div>
-                    </div>
-                </div>
-            </div>
-        </div>
-
-        <div id="motivation" class="container top-spacer">
-            <div class="col-md-12">
-                <div class="row row-cols-1 row-cols-lg-2">
-                    <div class="col">
-                        <h2 class="pb-2 border-bottom hidden">Motivation: <span class="text-muted">Why Software?</span></h2>
-                        <p class="lead hidden">Software development is undoubtably one of the fastest way to create
-                            a positive impact on society. I want to use that <span class="gradient-text"><b>potential</b></span> to the fullest.</p>
-                        <p class="hidden">
-                            I have always been fascinated by the idea of creating something out of nothing.
-                            Ever since my first coding project, I've been amazed by the speed that I could move 
-                            an idea from my head to a working, interactable prototype. I was drawn into the
-                            endless possibilities that came with learning a new language, framework, or library.
-                            Ever since that first project, I was hooked.
-                            <br>
-                            <br>
-                            With the explosive growth of machine learning and AI, I believe that software and ML
-                            will eventually work its way into every aspect of our lives. I want to be a part of
-                            this revolution and push the boundaries of what is thought to be possible with this
-                            technology.
-                        </p>
-                    </div>
-                    <div class="col">
-                        <img src="./img/sweating.gif" class="img-fluid rounded w-100" alt="...">
-                    </div>
-                </div>
-            </div>
-        </div>
-
-        <div id="tyblog" class="container text-center top-spacer">
-            <h1>Check out my blog!</h1>
-            <a href="https://tyblog-2e646.web.app/"><h1>TyBlog</h1></a>
-        </div>
-
-        <footer id="footer" class="top-spacer">
-            <div class="social-links">
-                <div class="col-md-12 text-center">
-                    <span class="m-4">
-                        <a href="mailto:hotyler312@gmail.com" class="text-white"><i class="fas fa-envelope"></i></a>
-                    </span>
-                    <span class="m-4">
-                        <a href="https://www.linkedin.com/in/tyler-ho-7bab25214/" class="text-white"><i
-                                class="fa-brands fa-linkedin"></i></a>
-                    </span>
-                    <span class="m-4">
-                        <a href="https://github.com/Tyrest" class="text-white"><i class="fa-brands fa-github"></i></a>
-                    </span>
-                </div>
-            </div>
-            <div class="copyright py-4 text-center">
-                <small>
-                    2023 Tyler Ho
-                </small>
-            </div>
-        </footer>
-    </main>
-
-
-    <!-- ======================= End Main Area ======================= -->
-
-    <!-- Bootsrap js file -->
-    <script src="./js/bootstrap.min.js"></script>
-
+        // Run the fetch
+        fetchProjects();
+    </script>
 </body>
-
 </html>

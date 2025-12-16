@@ -1,0 +1,521 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Interactive Guide to ASCII Control Characters</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link
+        href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;700&family=Fira+Code:wght@400;500&display=swap"
+        rel="stylesheet">
+    <!-- Chosen Palette: Solarized Light -->
+    <!-- Application Structure Plan: A single-page application with a fixed sidebar for thematic navigation (Introduction, Categories, Full Reference) and a dynamic main content area. This structure breaks down the dense report into manageable, explorable sections. The core interaction is a simulated terminal where users can execute examples for specific control characters, providing a hands-on learning experience that is more effective than static text. This non-linear, interactive approach is chosen for usability to make a complex technical subject accessible and engaging. -->
+    <!-- Visualization & Content Choices: 
+        - Report Info: Character evolutionary paths -> Goal: Compare/Inform -> Viz: Donut Chart (Chart.js) -> Interaction: Hover to see counts -> Justification: Provides a high-level summary of the report's findings.
+        - Report Info: Character details (purpose, status) -> Goal: Inform/Organize -> Viz: Interactive Cards (HTML/Tailwind) with color-coded status badges -> Interaction: N/A -> Justification: Organizes information cleanly and provides quick visual cues about relevance.
+        - Report Info: Demonstrable character effects (\n, \r, \t, \b, \a, \f) -> Goal: Demonstrate -> Viz: Simulated Terminal (HTML/CSS) with corresponding code snippet -> Interaction: "Run Example" buttons trigger JS to manipulate terminal content -> Justification: The most crucial interaction, making abstract codes tangible by showing both the code and its result.
+        - Report Info: ANSI Escape Sequences -> Goal: Demonstrate -> Viz: Interactive color/style pickers acting on the simulated terminal and updating a code view -> Interaction: Buttons apply ANSI codes to text -> Justification: Demystifies complex escape sequences through direct interaction.
+        - Report Info: Full character list -> Goal: Reference -> Viz: Searchable HTML Table -> Interaction: Live text search filters the table -> Justification: Enhances the utility of the reference data.
+        - Library/Method: Chart.js for the chart, Vanilla JS for all interactions and DOM manipulation.
+    -->
+    <!-- CONFIRMATION: NO SVG graphics used. NO Mermaid JS used. -->
+    <style>
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: #fdf6e3;
+            /* base03 */
+            color: #657b83;
+            /* base0 */
+        }
+
+        .font-mono {
+            font-family: 'Fira Code', monospace;
+        }
+
+        .sidebar-link {
+            transition: all 0.2s ease-in-out;
+            border-left: 3px solid transparent;
+        }
+
+        .sidebar-link.active,
+        .sidebar-link:hover {
+            background-color: #eee8d5;
+            /* base2 */
+            border-left-color: #b58900;
+            /* yellow */
+            color: #586e75;
+            /* base01 */
+        }
+
+        .status-enduring {
+            background-color: #859900;
+            color: white;
+        }
+
+        .status-repurposed {
+            background-color: #268bd2;
+            color: white;
+        }
+
+        .status-obsolete {
+            background-color: #93a1a1;
+            color: white;
+        }
+
+        .sim-terminal {
+            background-color: #002b36;
+            /* base03-dark */
+            color: #eee8d5;
+            /* base2 */
+            border-radius: 0.5rem;
+            padding: 1rem;
+            min-height: 100px;
+            white-space: pre-wrap;
+            word-wrap: break-word;
+        }
+
+        .code-block {
+            background-color: #073642;
+            /* base02-dark */
+            color: #93a1a1;
+            /* base1 */
+            border-radius: 0.5rem;
+            padding: 1rem;
+            white-space: pre-wrap;
+            word-wrap: break-word;
+        }
+
+        .code-block .token-string {
+            color: #2aa198;
+        }
+
+        /* cyan */
+        .code-block .token-keyword {
+            color: #859900;
+        }
+
+        /* green */
+        .code-block .token-function {
+            color: #268bd2;
+        }
+
+        /* blue */
+        .code-block .token-comment {
+            color: #586e75;
+        }
+
+        /* base01 */
+
+        .chart-container {
+            position: relative;
+            width: 100%;
+            max-width: 400px;
+            margin-left: auto;
+            margin-right: auto;
+            height: 300px;
+            max-height: 400px;
+        }
+
+        @media (min-width: 768px) {
+            .chart-container {
+                height: 350px;
+            }
+        }
+    </style>
+</head>
+
+<body class="antialiased">
+
+    <div class="flex h-screen bg-[#fdf6e3]">
+        <aside class="w-64 bg-[#fdf6e3] border-r border-[#eee8d5] flex-shrink-0 hidden md:block">
+            <div class="p-4">
+                <h1 class="text-xl font-bold text-[#586e75]">ASCII Explorer</h1>
+                <p class="text-sm text-[#93a1a1]">Ghosts in the Machine</p>
+            </div>
+            <nav id="sidebar-nav" class="mt-4 flex flex-col space-y-1">
+            </nav>
+        </aside>
+
+        <main class="flex-1 overflow-y-auto p-4 md:p-8 lg:p-12">
+            <div id="content-area" class="max-w-4xl mx-auto">
+            </div>
+        </main>
+    </div>
+
+    <script>
+        const data = {
+            characters: [
+                { dec: 0, hex: '00', name: 'Null', mnemonic: 'NUL', category: 'Miscellaneous', status: 'Repurposed', original: 'Used as a "do-nothing" time-wasting character for slow mechanical devices.', modern: 'Famously repurposed by the C language as the terminator for strings. A C-style string is a sequence of characters ending with a NUL byte.', example: 'c_string', exampleCode: 'char str[] = "Hello\\0World";\nprintf("%s", str);' },
+                { dec: 7, hex: '07', name: 'Bell', mnemonic: 'BEL', category: 'Miscellaneous', status: 'Enduring', original: 'Triggered a physical bell on a teletype to get the operator\'s attention.', modern: 'Still works in most terminals, producing a system beep or a visual flash. Used for alerts in command-line applications.', example: 'bell', exampleCode: 'print("Alert!\\a")' },
+                { dec: 8, hex: '08', name: 'Backspace', mnemonic: 'BS', category: 'Format Effectors', status: 'Repurposed', original: 'Moved the print head one position backward without deleting. Used to create composite characters (e.g., a + BS + \' = à).', modern: 'Universally reinterpreted as a destructive command that deletes the character to the left of the cursor.', example: 'backspace', exampleCode: 'import sys, time\n\nsys.stdout.write("123")\nsys.stdout.flush()\ntime.sleep(1)\n\n# \\b moves cursor left, then "4" overwrites "3"\nsys.stdout.write("\\b4")\nsys.stdout.flush()' },
+                { dec: 9, hex: '09', name: 'Horizontal Tab', mnemonic: 'HT', category: 'Format Effectors', status: 'Enduring', original: 'Advanced the print head to the next predefined horizontal tab stop.', modern: 'Ubiquitous for indentation in code and aligning text. The visual width (e.g., 4 or 8 spaces) is determined by the rendering application.', example: 'tab', exampleCode: 'print("Name:\\tJohn Doe\\nRank:\\tSergeant")' },
+                { dec: 10, hex: '0A', name: 'Line Feed', mnemonic: 'LF', category: 'Format Effectors', status: 'Enduring', original: 'Advanced the paper one line down without moving the print head horizontally.', modern: 'The standard newline character on Unix-like systems (Linux, macOS). The logical "new line" in most programming languages (\\n).', example: 'linefeed', exampleCode: 'print("First line.\\nSecond line.")' },
+                { dec: 11, hex: '0B', name: 'Vertical Tab', mnemonic: 'VT', category: 'Format Effectors', status: 'Obsolete', original: 'Advanced the print position to the next predefined vertical line.', modern: 'Almost entirely obsolete. Most modern terminals and text editors do not recognize it and may render it as a glyph.' },
+                { dec: 12, hex: '0C', name: 'Form Feed', mnemonic: 'FF', category: 'Format Effectors', status: 'Repurposed', original: 'Instructed a printer to eject the current page and start a new one.', modern: 'Used in some text editors and IDEs as a logical page break to separate sections of code. Some terminals interpret it as "clear screen".', example: 'formfeed', exampleCode: 'import os, time\n\nprint("Page 1")\ntime.sleep(1)\n\n# Some terminals interpret \\f as clear screen.\n# A more common method is os.system():\nos.system("clear" if os.name == "posix" else "cls")\nprint("Page 2")' },
+                { dec: 13, hex: '0D', name: 'Carriage Return', mnemonic: 'CR', category: 'Format Effectors', status: 'Enduring', original: 'Returned the print head to the beginning of the current line without advancing the paper.', modern: 'Combined with LF (CRLF, \\r\\n) for line endings on Windows. Used alone to create dynamic, single-line status updates and progress bars.', example: 'carriagereturn', exampleCode: 'import sys, time\n\nfor i in range(101):\n    sys.stdout.write(f"\\rProgress: {i}%")\n    sys.stdout.flush()\n    time.sleep(0.05)' },
+                { dec: 27, hex: '1B', name: 'Escape', mnemonic: 'ESC', category: 'Gateway', status: 'Enduring', original: 'A prefix indicating that the following characters form a special command sequence, not literal data.', modern: 'The essential gateway for modern terminal control. It introduces ANSI escape sequences for controlling cursor position, text colors, and styles.', example: 'ansi' },
+                { dec: 127, hex: '7F', name: 'Delete', mnemonic: 'DEL', category: 'Miscellaneous', status: 'Repurposed', original: 'Physically obliterated a character on 7-track paper tape by punching out all holes (binary 1111111).', modern: 'Its function was confused with Backspace for decades. Modern systems have standardized, but the legacy of `stty` settings remains.' },
+                { dec: 1, hex: '01', name: 'Start of Heading', mnemonic: 'SOH', category: 'Transmission Control', status: 'Obsolete', original: 'Marked the beginning of a message header.', modern: 'Functions replaced by modern network protocols like TCP/IP. Its keyboard shortcut Ctrl+A is often used for "select all" or "go to beginning of line".' },
+                { dec: 2, hex: '02', name: 'Start of Text', mnemonic: 'STX', category: 'Transmission Control', status: 'Obsolete', original: 'Marked the end of the header and start of the message text.', modern: 'Replaced by modern network protocols. Ctrl+B is often "move cursor back".' },
+                { dec: 3, hex: '03', name: 'End of Text', mnemonic: 'ETX', category: 'Transmission Control', status: 'Repurposed', original: 'Marked the end of the message text.', modern: 'The keyboard shortcut Ctrl+C is the universal "interrupt" signal (SIGINT) to terminate a running process.' },
+                { dec: 4, hex: '04', name: 'End of Transmission', mnemonic: 'EOT', category: 'Transmission Control', status: 'Repurposed', original: 'Terminated the entire transmission session.', modern: 'The keyboard shortcut Ctrl+D signals "End of File" (EOF) on terminal input in Unix-like systems.' },
+                { dec: 5, hex: '05', name: 'Enquiry', mnemonic: 'ENQ', category: 'Transmission Control', status: 'Obsolete', original: 'Sent to request a response or identity from a remote station.', modern: 'Replaced by modern network protocols. Ctrl+E is often "go to end of line".' },
+                { dec: 6, hex: '06', name: 'Acknowledge', mnemonic: 'ACK', category: 'Transmission Control', status: 'Obsolete', original: 'A positive response confirming successful receipt of a message.', modern: 'Concept lives on in TCP acknowledgments, but the character itself is not used.' },
+                { dec: 17, hex: '11', name: 'Device Control 1 (XON)', mnemonic: 'DC1', category: 'Device Control', status: 'Repurposed', original: 'A generic device control code, often used to resume transmission (Transmit ON).', modern: 'Known as XON (`Ctrl+Q`), it is used in software flow control to tell the sender it can resume sending data. Un-freezes a terminal frozen by Ctrl+S.' },
+                { dec: 19, hex: '13', name: 'Device Control 3 (XOFF)', mnemonic: 'DC3', category: 'Device Control', status: 'Repurposed', original: 'A generic device control code, often used to pause transmission (Transmit OFF).', modern: 'Known as XOFF (`Ctrl+S`), it is used in software flow control to tell a fast sender to pause. Accidentally pressing it can "freeze" a terminal.' },
+                { dec: 21, hex: '15', name: 'Negative Acknowledge', mnemonic: 'NAK', category: 'Transmission Control', status: 'Obsolete', original: 'A negative response indicating a message was received with errors.', modern: 'Concept lives on in network protocols, but the character is not used.' },
+                { dec: 26, hex: '1A', name: 'Substitute', mnemonic: 'SUB', category: 'Error Handling', status: 'Repurposed', original: 'Used to replace a character known to be invalid or corrupted.', modern: 'Adopted by CP/M and MS-DOS as the end-of-file (EOF) marker for text files. Pressing `Ctrl+Z` in the Windows command prompt still has this meaning.' },
+                { dec: 28, hex: '1C', name: 'File Separator', mnemonic: 'FS', category: 'Information Separators', status: 'Obsolete', original: 'A non-printable delimiter intended to separate logical files.', modern: 'This elegant system of hierarchical, non-colliding delimiters was never widely adopted, losing out to the convenience of printable delimiters like commas and tabs.' },
+                { dec: 29, hex: '1D', name: 'Group Separator', mnemonic: 'GS', category: 'Information Separators', status: 'Obsolete', original: 'A non-printable delimiter intended to separate groups of records (e.g., tables).', modern: 'This elegant system of hierarchical, non-colliding delimiters was never widely adopted, losing out to the convenience of printable delimiters like commas and tabs.' },
+                { dec: 30, hex: '1E', name: 'Record Separator', mnemonic: 'RS', category: 'Information Separators', status: 'Obsolete', original: 'A non-printable delimiter intended to separate individual records (e.g., rows).', modern: 'This elegant system of hierarchical, non-colliding delimiters was never widely adopted, losing out to the convenience of printable delimiters like commas and tabs.' },
+                { dec: 31, hex: '1F', name: 'Unit Separator', mnemonic: 'US', category: 'Information Separators', status: 'Obsolete', original: 'A non-printable delimiter intended to separate individual units (e.g., fields).', modern: 'This elegant system of hierarchical, non-colliding delimiters was never widely adopted, losing out to the convenience of printable delimiters like commas and tabs.' },
+            ],
+            categories: [
+                { id: 'intro', name: 'Introduction' },
+                { id: 'format', name: 'Format Effectors', filter: 'Format Effectors' },
+                { id: 'transmission', name: 'Transmission & Flow Control', filter: 'Transmission Control' },
+                { id: 'device', name: 'Device Control', filter: 'Device Control' },
+                { id: 'separators', name: 'Information Separators', filter: 'Information Separators' },
+                { id: 'misc', name: 'Miscellaneous & Gateway', filter: ['Miscellaneous', 'Gateway', 'Error Handling'] },
+                { id: 'reference', name: 'Full Reference Table' }
+            ]
+        };
+
+        const contentArea = document.getElementById('content-area');
+        const sidebarNav = document.getElementById('sidebar-nav');
+        let activeLink = null;
+        let audioCtx;
+
+        function playBell() {
+            if (!audioCtx) {
+                audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+            }
+            const oscillator = audioCtx.createOscillator();
+            const gainNode = audioCtx.createGain();
+            oscillator.connect(gainNode);
+            gainNode.connect(audioCtx.destination);
+            oscillator.type = 'sine';
+            oscillator.frequency.setValueAtTime(880, audioCtx.currentTime);
+            gainNode.gain.setValueAtTime(0.5, audioCtx.currentTime);
+            gainNode.gain.exponentialRampToValueAtTime(0.0001, audioCtx.currentTime + 0.5);
+            oscillator.start();
+            oscillator.stop(audioCtx.currentTime + 0.5);
+        }
+
+        function runExample(exampleType, terminal) {
+            terminal.textContent = '';
+            switch (exampleType) {
+                case 'bell':
+                    terminal.textContent = 'Ringing the bell...';
+                    playBell();
+                    setTimeout(() => terminal.textContent = 'Alert sounded!', 500);
+                    break;
+                case 'backspace':
+                    terminal.textContent = '123';
+                    setTimeout(() => {
+                        terminal.textContent = '124';
+                    }, 1000);
+                    break;
+                case 'tab':
+                    terminal.textContent = 'Name:\tJohn Doe\nRank:\tSergeant';
+                    break;
+                case 'linefeed':
+                    terminal.textContent = 'This is the first line.\nThis is the second line.';
+                    break;
+                case 'formfeed':
+                    terminal.textContent = 'Page 1';
+                    setTimeout(() => {
+                        terminal.textContent = 'Page 2';
+                    }, 1000);
+                    break;
+                case 'carriagereturn':
+                    let i = 0;
+                    const interval = setInterval(() => {
+                        if (i > 100) {
+                            clearInterval(interval);
+                            terminal.textContent += '\nDownload Complete.';
+                            return;
+                        }
+                        const bar = '[' + '#'.repeat(Math.floor(i / 5)) + ' '.repeat(20 - Math.floor(i / 5)) + ']';
+                        terminal.textContent = `Downloading... ${bar} ${i}%`;
+                        i++;
+                    }, 50);
+                    break;
+                case 'c_string':
+                    terminal.textContent = 'Output:\nHello';
+                    break;
+            }
+        }
+
+        function applyAnsi(style, terminal, codeDisplay) {
+            const sampleText = "The quick brown fox jumps over the lazy dog.";
+            let styledText = sampleText;
+            let codeText = '';
+            let finalCode = '';
+
+            switch (style) {
+                case 'red': codeText = '\\033[31m'; styledText = `\x1b[31m${sampleText}\x1b[0m`; break;
+                case 'green': codeText = '\\033[32m'; styledText = `\x1b[32m${sampleText}\x1b[0m`; break;
+                case 'blue': codeText = '\\033[34m'; styledText = `\x1b[34m${sampleText}\x1b[0m`; break;
+                case 'bold': codeText = '\\033[1m'; styledText = `\x1b[1m${sampleText}\x1b[0m`; break;
+                case 'underline': codeText = '\\033[4m'; styledText = `\x1b[4m${sampleText}\x1b[0m`; break;
+                case 'invert': codeText = '\\033[7m'; styledText = `\x1b[7m${sampleText}\x1b[0m`; break;
+                case 'cursor':
+                    codeText = '\\033[5;10H';
+                    styledText = `Moving cursor to Row 5, Col 10...\n\n\n\n         ...and printing text here.`;
+                    break;
+                case 'clear':
+                    codeText = '\\033[2J\\033[H';
+                    terminal.textContent = 'Screen content here.';
+                    setTimeout(() => {
+                        terminal.textContent = 'Screen cleared and cursor at home!';
+                    }, 1000);
+                    finalCode = `print("${codeText}")`;
+                    codeDisplay.textContent = finalCode;
+                    return;
+            }
+            finalCode = `print(f"${codeText}${sampleText}\\033[0m")`;
+            codeDisplay.textContent = finalCode;
+            terminal.textContent = `Output:\n${styledText}`;
+        }
+
+        function createCharacterCard(char) {
+            const statusClass = `status-${char.status.toLowerCase()}`;
+            let exampleHtml = '';
+            if (char.example) {
+                if (char.example === 'ansi') {
+                    exampleHtml = `
+                        <div class="mt-4 border-t border-[#eee8d5] pt-4 space-y-3">
+                            <div>
+                                <h4 class="font-semibold text-[#586e75] mb-2">Interactive ANSI Demo</h4>
+                                <p class="text-sm text-[#657b83] mb-2">Select a style to see the Python code and its effect.</p>
+                                <pre class="code-block font-mono text-sm"><code id="code-${char.dec}">print("...")</code></pre>
+                            </div>
+                            <div>
+                                <h4 class="font-semibold text-[#586e75] mb-2">Simulated Output</h4>
+                                <div class="sim-terminal font-mono text-sm" id="term-${char.dec}">Select a style to apply...</div>
+                            </div>
+                            <div class="flex flex-wrap gap-2 pt-2">
+                                <button data-style="red" class="ansi-btn text-sm bg-[#dc322f] text-white px-2 py-1 rounded">Red Text</button>
+                                <button data-style="green" class="ansi-btn text-sm bg-[#859900] text-white px-2 py-1 rounded">Green Text</button>
+                                <button data-style="blue" class="ansi-btn text-sm bg-[#268bd2] text-white px-2 py-1 rounded">Blue Text</button>
+                                <button data-style="bold" class="ansi-btn text-sm bg-[#6c71c4] text-white px-2 py-1 rounded">Bold</button>
+                                <button data-style="underline" class="ansi-btn text-sm bg-[#b58900] text-white px-2 py-1 rounded">Underline</button>
+                                <button data-style="invert" class="ansi-btn text-sm bg-[#586e75] text-white px-2 py-1 rounded">Invert</button>
+                                <button data-style="cursor" class="ansi-btn text-sm bg-[#cb4b16] text-white px-2 py-1 rounded">Move Cursor</button>
+                                <button data-style="clear" class="ansi-btn text-sm bg-[#d33682] text-white px-2 py-1 rounded">Clear Screen</button>
+                            </div>
+                        </div>
+                    `;
+                } else {
+                    const lang = char.example === 'c_string' ? 'c' : 'python';
+                    exampleHtml = `
+                        <div class="mt-4 border-t border-[#eee8d5] pt-4 space-y-3">
+                            <div>
+                                <h4 class="font-semibold text-[#586e75] mb-2">Example Code (${lang})</h4>
+                                <pre class="code-block font-mono text-sm"><code>${char.exampleCode.replace(/</g, '&lt;').replace(/>/g, '&gt;')}</code></pre>
+                            </div>
+                            <div>
+                                <h4 class="font-semibold text-[#586e75] mb-2">Live Example</h4>
+                                <div class="sim-terminal font-mono text-sm" id="term-${char.dec}">Click "Run Example" to see the effect.</div>
+                                <button class="example-btn mt-2 text-sm bg-[#b58900] text-white px-3 py-1 rounded hover:bg-[#cb4b16] transition-colors" data-example="${char.example}" data-target="term-${char.dec}">Run Example</button>
+                            </div>
+                        </div>
+                    `;
+                }
+            }
+
+            return `
+                <div class="bg-[#eee8d5] p-4 rounded-lg shadow-sm">
+                    <div class="flex justify-between items-start">
+                        <div>
+                            <h3 class="text-lg font-bold text-[#586e75]">${char.name} (${char.mnemonic})</h3>
+                            <p class="font-mono text-sm text-[#93a1a1]">DEC: ${char.dec} | HEX: 0x${char.hex}</p>
+                        </div>
+                        <span class="text-xs font-semibold px-2 py-1 rounded-full ${statusClass}">${char.status}</span>
+                    </div>
+                    <div class="mt-4 space-y-2 text-sm text-[#657b83]">
+                        <p><strong class="text-[#586e75]">Original Purpose:</strong> ${char.original}</p>
+                        <p><strong class="text-[#586e75]">Modern Usage:</strong> ${char.modern}</p>
+                    </div>
+                    ${exampleHtml}
+                </div>
+            `;
+        }
+
+        function renderIntro() {
+            const statusCounts = data.characters.reduce((acc, char) => {
+                acc[char.status] = (acc[char.status] || 0) + 1;
+                return acc;
+            }, {});
+
+            contentArea.innerHTML = `
+                <div class="space-y-6">
+                    <div>
+                        <h2 class="text-3xl font-bold text-[#586e75]">Ghosts in the Machine</h2>
+                        <p class="mt-2 text-lg text-[#657b83]">An Interactive Guide to ASCII Control Characters</p>
+                    </div>
+                    <div class="text-[#657b83] space-y-4">
+                        <p>In the digital world, beyond the letters and symbols we see, lies a foundational set of invisible commands: the ASCII control characters. Born from the mechanical necessities of 1960s teletypes and paper tape, these 33 codes were designed to control devices, manage data streams, and structure information. They are a digital fossil record of a bygone era of computing.</p>
+                        <p>This application explores their divergent legacy. As you navigate through the categories, you'll discover how some characters have endured, some have been cleverly repurposed for entirely new functions, and many have become obsolete ghosts in the modern machine. Use the interactive examples to see their original (or modern) functions in action.</p>
+                    </div>
+                    <div>
+                        <h3 class="text-2xl font-bold text-[#586e75] mb-4">A Divergent Legacy</h3>
+                        <div class="chart-container">
+                            <canvas id="statusChart"></canvas>
+                        </div>
+                    </div>
+                </div>
+            `;
+
+            const ctx = document.getElementById('statusChart').getContext('2d');
+            new Chart(ctx, {
+                type: 'doughnut',
+                data: {
+                    labels: ['Enduring', 'Repurposed', 'Obsolete'],
+                    datasets: [{
+                        data: [statusCounts.Enduring, statusCounts.Repurposed, statusCounts.Obsolete],
+                        backgroundColor: ['#859900', '#268bd2', '#93a1a1'],
+                        borderColor: '#fdf6e3',
+                        borderWidth: 4
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        legend: {
+                            position: 'bottom',
+                            labels: {
+                                color: '#657b83',
+                                font: {
+                                    family: "'Inter', sans-serif",
+                                    size: 14
+                                }
+                            }
+                        }
+                    }
+                }
+            });
+        }
+
+        function renderCategory(category) {
+            const filteredChars = data.characters.filter(char =>
+                Array.isArray(category.filter) ? category.filter.includes(char.category) : char.category === category.filter
+            );
+
+            let introText = '';
+            if (category.id === 'format') introText = '<p class="mb-6 text-[#657b83]">These characters control the physical positioning of the print head or cursor. They form the basis of text layout in virtually all modern systems.</p>';
+            if (category.id === 'transmission') introText = '<p class="mb-6 text-[#657b83]">This group provides a basic "envelope" to structure messages, perform handshakes, and ensure data integrity over a communication link, representing a primitive form of modern network layers.</p>';
+            if (category.id === 'device') introText = '<p class="mb-6 text-[#657b83]">These generic codes were used to control physical devices like paper tape readers. Their most famous repurposed use is for XON/XOFF software flow control.</p>';
+            if (category.id === 'separators') introText = '<p class="mb-6 text-[#657b83]">A remarkably forward-thinking but ultimately failed system of non-printable, hierarchical delimiters for structuring data, made obsolete by the convenience of printable characters like commas and tabs.</p>';
+            if (category.id === 'misc') introText = '<p class="mb-6 text-[#657b83]">This group includes miscellaneous characters for alerts and error handling, as well as the all-important Escape (ESC) character, the gateway to modern terminal control.</p>';
+
+
+            contentArea.innerHTML = `
+                <h2 class="text-3xl font-bold text-[#586e75] mb-4">${category.name}</h2>
+                ${introText}
+                <div class="grid grid-cols-1 lg:grid-cols-2 gap-4">
+                    ${filteredChars.map(createCharacterCard).join('')}
+                </div>
+            `;
+        }
+
+        function renderReference() {
+            contentArea.innerHTML = `
+                <h2 class="text-3xl font-bold text-[#586e75] mb-4">Full Reference Table</h2>
+                <p class="mb-4 text-[#657b83]">Use the search box to filter the table by name, mnemonic, or code.</p>
+                <input type="text" id="ref-search" placeholder="Search..." class="w-full p-2 mb-4 rounded border border-[#eee8d5] bg-white focus:ring-2 focus:ring-[#b58900] outline-none">
+                <div class="overflow-x-auto">
+                    <table class="min-w-full bg-[#eee8d5] rounded-lg">
+                        <thead class="bg-[#fdf6e3]">
+                            <tr>
+                                <th class="p-3 text-left text-sm font-semibold text-[#586e75]">DEC</th>
+                                <th class="p-3 text-left text-sm font-semibold text-[#586e75]">HEX</th>
+                                <th class="p-3 text-left text-sm font-semibold text-[#586e75]">Mnemonic</th>
+                                <th class="p-3 text-left text-sm font-semibold text-[#586e75]">Name</th>
+                                <th class="p-3 text-left text-sm font-semibold text-[#586e75]">Category</th>
+                                <th class="p-3 text-left text-sm font-semibold text-[#586e75]">Status</th>
+                            </tr>
+                        </thead>
+                        <tbody id="ref-table-body">
+                            ${data.characters.map(char => `
+                                <tr class="border-t border-[#fdf6e3]">
+                                    <td class="p-3 text-sm font-mono">${char.dec}</td>
+                                    <td class="p-3 text-sm font-mono">0x${char.hex}</td>
+                                    <td class="p-3 text-sm font-mono font-bold text-[#268bd2]">${char.mnemonic}</td>
+                                    <td class="p-3 text-sm">${char.name}</td>
+                                    <td class="p-3 text-sm">${char.category}</td>
+                                    <td class="p-3 text-sm"><span class="text-xs font-semibold px-2 py-1 rounded-full ${'status-' + char.status.toLowerCase()}">${char.status}</span></td>
+                                </tr>
+                            `).join('')}
+                        </tbody>
+                    </table>
+                </div>
+            `;
+            document.getElementById('ref-search').addEventListener('keyup', (e) => {
+                const searchTerm = e.target.value.toLowerCase();
+                const rows = document.querySelectorAll('#ref-table-body tr');
+                rows.forEach(row => {
+                    row.style.display = row.innerText.toLowerCase().includes(searchTerm) ? '' : 'none';
+                });
+            });
+        }
+
+        function navigate(id) {
+            const category = data.categories.find(c => c.id === id);
+            if (!category) return;
+
+            if (activeLink) activeLink.classList.remove('active');
+            activeLink = document.querySelector(`[data-id="${id}"]`);
+            if (activeLink) activeLink.classList.add('active');
+
+            if (id === 'intro') {
+                renderIntro();
+            } else if (id === 'reference') {
+                renderReference();
+            } else {
+                renderCategory(category);
+            }
+
+            contentArea.scrollTo(0, 0);
+        }
+
+        function init() {
+            sidebarNav.innerHTML = data.categories.map(cat => `
+                <a href="#" class="sidebar-link block px-4 py-2 text-[#657b83]" data-id="${cat.id}">${cat.name}</a>
+            `).join('');
+
+            sidebarNav.addEventListener('click', (e) => {
+                e.preventDefault();
+                const link = e.target.closest('a');
+                if (link && link.dataset.id) {
+                    navigate(link.dataset.id);
+                }
+            });
+
+            contentArea.addEventListener('click', (e) => {
+                if (e.target.classList.contains('example-btn')) {
+                    const term = document.getElementById(e.target.dataset.target);
+                    runExample(e.target.dataset.example, term);
+                }
+                if (e.target.classList.contains('ansi-btn')) {
+                    const card = e.target.closest('.bg-\\[\\#eee8d5\\]');
+                    const term = card.querySelector('.sim-terminal');
+                    const codeDisplay = card.querySelector('code');
+                    applyAnsi(e.target.dataset.style, term, codeDisplay);
+                }
+            });
+
+            navigate('intro');
+        }
+
+        document.addEventListener('DOMContentLoaded', init);
+    </script>
+</body>
+
+</html>
