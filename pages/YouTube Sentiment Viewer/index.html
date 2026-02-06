@@ -1,0 +1,962 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>YouTube Scrape Results Viewer</title>
+    <style>
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+            background: #f5f5f5;
+            padding: 20px;
+        }
+
+        .container {
+            max-width: 1400px;
+            margin: 0 auto;
+            background: white;
+            border-radius: 8px;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+        }
+
+        .header {
+            padding: 20px 30px;
+            border-bottom: 1px solid #e0e0e0;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            border-radius: 8px 8px 0 0;
+        }
+
+        .header h1 {
+            font-size: 24px;
+            margin-bottom: 10px;
+        }
+
+        .file-input {
+            margin-top: 15px;
+        }
+
+        .file-input input[type="file"] {
+            padding: 8px 12px;
+            border: 2px solid white;
+            border-radius: 4px;
+            background: rgba(255,255,255,0.2);
+            color: white;
+            cursor: pointer;
+        }
+
+        .file-input input[type="file"]::file-selector-button {
+            background: white;
+            color: #667eea;
+            border: none;
+            padding: 8px 16px;
+            border-radius: 4px;
+            cursor: pointer;
+            font-weight: 600;
+            margin-right: 10px;
+        }
+
+        .tabs {
+            display: flex;
+            padding: 0 30px;
+            background: #fafafa;
+            border-bottom: 2px solid #e0e0e0;
+        }
+
+        .tab {
+            padding: 15px 25px;
+            cursor: pointer;
+            border: none;
+            background: none;
+            font-size: 14px;
+            font-weight: 500;
+            color: #666;
+            border-bottom: 3px solid transparent;
+            transition: all 0.2s;
+        }
+
+        .tab:hover {
+            color: #333;
+            background: rgba(102, 126, 234, 0.05);
+        }
+
+        .tab.active {
+            color: #667eea;
+            border-bottom-color: #667eea;
+        }
+
+        .content {
+            padding: 30px;
+        }
+
+        .tab-content {
+            display: none;
+        }
+
+        .tab-content.active {
+            display: block;
+        }
+
+        .metadata-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: 20px;
+            margin-bottom: 20px;
+        }
+
+        .metadata-card {
+            background: #f9f9f9;
+            padding: 20px;
+            border-radius: 6px;
+            border-left: 4px solid #667eea;
+        }
+
+        .metadata-card h3 {
+            font-size: 14px;
+            color: #666;
+            margin-bottom: 8px;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+
+        .metadata-card .value {
+            font-size: 24px;
+            font-weight: 600;
+            color: #333;
+        }
+
+        .metadata-card .subtext {
+            font-size: 12px;
+            color: #999;
+            margin-top: 4px;
+        }
+
+        .search-box {
+            margin-bottom: 20px;
+            padding: 12px;
+            width: 100%;
+            border: 2px solid #e0e0e0;
+            border-radius: 6px;
+            font-size: 14px;
+        }
+
+        .search-box:focus {
+            outline: none;
+            border-color: #667eea;
+        }
+
+        .video-card, .comment-card {
+            background: white;
+            border: 1px solid #e0e0e0;
+            border-radius: 6px;
+            padding: 20px;
+            margin-bottom: 15px;
+            transition: box-shadow 0.2s;
+        }
+
+        .video-card:hover, .comment-card:hover {
+            box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+        }
+
+        .video-header {
+            display: flex;
+            gap: 15px;
+            margin-bottom: 15px;
+        }
+
+        .video-thumbnail {
+            width: 180px;
+            height: 100px;
+            object-fit: cover;
+            border-radius: 4px;
+            flex-shrink: 0;
+        }
+
+        .video-info {
+            flex: 1;
+        }
+
+        .video-title {
+            font-size: 16px;
+            font-weight: 600;
+            color: #333;
+            margin-bottom: 8px;
+            line-height: 1.4;
+        }
+
+        .video-title a {
+            color: #667eea;
+            text-decoration: none;
+        }
+
+        .video-title a:hover {
+            text-decoration: underline;
+        }
+
+        .video-meta {
+            display: flex;
+            gap: 20px;
+            flex-wrap: wrap;
+            font-size: 13px;
+            color: #666;
+        }
+
+        .video-meta-item {
+            display: flex;
+            align-items: center;
+            gap: 5px;
+        }
+
+        .video-meta-item::before {
+            content: '•';
+            color: #999;
+        }
+
+        .video-meta-item:first-child::before {
+            content: '';
+        }
+
+        .video-description {
+            margin-top: 12px;
+            font-size: 14px;
+            color: #555;
+            line-height: 1.6;
+            max-height: 100px;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+
+        .video-description.expanded {
+            max-height: none;
+        }
+
+        .expand-btn {
+            background: none;
+            border: none;
+            color: #667eea;
+            cursor: pointer;
+            font-size: 13px;
+            margin-top: 8px;
+            padding: 0;
+        }
+
+        .expand-btn:hover {
+            text-decoration: underline;
+        }
+
+        .comment-text {
+            font-size: 14px;
+            line-height: 1.6;
+            color: #333;
+            margin-bottom: 12px;
+        }
+
+        .comment-meta {
+            display: flex;
+            gap: 15px;
+            font-size: 12px;
+            color: #666;
+            padding-top: 12px;
+            border-top: 1px solid #f0f0f0;
+        }
+
+        .tag {
+            display: inline-block;
+            padding: 4px 10px;
+            background: #f0f0f0;
+            border-radius: 12px;
+            font-size: 12px;
+            color: #666;
+            margin-right: 8px;
+            margin-bottom: 8px;
+        }
+
+        .tag.error {
+            background: #ffe0e0;
+            color: #cc0000;
+        }
+
+        .stats-row {
+            display: flex;
+            gap: 10px;
+            margin-top: 12px;
+        }
+
+        .stat-badge {
+            padding: 6px 12px;
+            background: #f0f0f0;
+            border-radius: 4px;
+            font-size: 12px;
+            color: #666;
+        }
+
+        .stat-badge strong {
+            color: #333;
+            margin-right: 4px;
+        }
+
+        .empty-state {
+            text-align: center;
+            padding: 60px 20px;
+            color: #999;
+        }
+
+        .empty-state svg {
+            width: 64px;
+            height: 64px;
+            margin-bottom: 20px;
+            opacity: 0.3;
+        }
+
+        .json-viewer {
+            background: #1e1e1e;
+            color: #d4d4d4;
+            padding: 20px;
+            border-radius: 6px;
+            overflow-x: auto;
+            font-family: 'Courier New', monospace;
+            font-size: 13px;
+            line-height: 1.5;
+        }
+
+        .filters {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 20px;
+            flex-wrap: wrap;
+        }
+
+        .filter-btn {
+            padding: 8px 16px;
+            border: 2px solid #e0e0e0;
+            background: white;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 13px;
+            transition: all 0.2s;
+        }
+
+        .filter-btn:hover {
+            border-color: #667eea;
+            color: #667eea;
+        }
+
+        .filter-btn.active {
+            background: #667eea;
+            border-color: #667eea;
+            color: white;
+        }
+
+        .query-card {
+            background: #f9f9f9;
+            padding: 15px;
+            border-radius: 6px;
+            margin-bottom: 15px;
+            border-left: 4px solid #667eea;
+        }
+
+        .query-card h4 {
+            font-size: 14px;
+            color: #333;
+            margin-bottom: 10px;
+        }
+
+        .query-meta {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 10px;
+            font-size: 13px;
+            color: #666;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>📊 YouTube Scrape Results Viewer</h1>
+            <div class="file-input">
+                <input type="file" id="fileInput" accept=".json">
+            </div>
+        </div>
+
+        <div class="tabs" id="tabs">
+            <button class="tab active" data-tab="overview">Overview</button>
+            <button class="tab" data-tab="videos">Videos</button>
+            <button class="tab" data-tab="summaries">Video Summaries</button>
+            <button class="tab" data-tab="comments">Comments</button>
+            <button class="tab" data-tab="sentiment">Sentiment Analysis</button>
+            <button class="tab" data-tab="queries">Search Queries</button>
+            <button class="tab" data-tab="costs">AI Costs</button>
+            <button class="tab" data-tab="raw">Raw JSON</button>
+        </div>
+
+        <div class="content">
+            <div id="overview" class="tab-content active">
+                <div class="empty-state">
+                    <svg viewBox="0 0 24 24" fill="currentColor">
+                        <path d="M14,2H6A2,2 0 0,0 4,4V20A2,2 0 0,0 6,22H18A2,2 0 0,0 20,20V8L14,2M18,20H6V4H13V9H18V20Z"/>
+                    </svg>
+                    <h2>No file loaded</h2>
+                    <p>Select a JSON file above to view results</p>
+                </div>
+            </div>
+
+            <div id="videos" class="tab-content">
+                <input type="text" class="search-box" id="videoSearch" placeholder="Search videos by title, channel, or description...">
+                <div class="filters" id="videoFilters"></div>
+                <div id="videosList"></div>
+            </div>
+
+            <div id="summaries" class="tab-content">
+                <div id="summariesList"></div>
+            </div>
+
+            <div id="comments" class="tab-content">
+                <input type="text" class="search-box" id="commentSearch" placeholder="Search comments by text, author, or video...">
+                <div class="filters" id="sentimentFilters"></div>
+                <div id="commentsList"></div>
+            </div>
+
+            <div id="sentiment" class="tab-content">
+                <div id="sentimentChart"></div>
+                <div id="sentimentBreakdown"></div>
+            </div>
+
+            <div id="queries" class="tab-content">
+                <div id="queriesList"></div>
+            </div>
+
+            <div id="costs" class="tab-content">
+                <div id="costDetails"></div>
+            </div>
+
+            <div id="raw" class="tab-content">
+                <pre class="json-viewer" id="rawJson"></pre>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        let currentData = null;
+
+        document.getElementById('fileInput').addEventListener('change', function(e) {
+            const file = e.target.files[0];
+            if (!file) return;
+
+            const reader = new FileReader();
+            reader.onload = function(e) {
+                try {
+                    currentData = JSON.parse(e.target.result);
+                    renderAll();
+                } catch (err) {
+                    alert('Error parsing JSON: ' + err.message);
+                }
+            };
+            reader.readAsText(file);
+        });
+
+        document.querySelectorAll('.tab').forEach(tab => {
+            tab.addEventListener('click', function() {
+                const tabName = this.dataset.tab;
+                
+                document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+                document.querySelectorAll('.tab-content').forEach(c => c.classList.remove('active'));
+                
+                this.classList.add('active');
+                document.getElementById(tabName).classList.add('active');
+            });
+        });
+
+        function renderAll() {
+            if (!currentData) return;
+            
+            renderOverview();
+            renderVideos();
+            renderVideoSummaries();
+            renderComments();
+            renderSentimentAnalysis();
+            renderQueries();
+            renderCosts();
+            renderRawJson();
+        }
+
+        function renderOverview() {
+            const meta = currentData.metadata;
+            const summary = meta.summary;
+            const params = meta.execution_parameters;
+
+            const html = `
+                <div class="metadata-grid">
+                    <div class="metadata-card">
+                        <h3>Total Videos Found</h3>
+                        <div class="value">${summary.total_videos_found}</div>
+                        <div class="subtext">${summary.total_unique_videos} unique</div>
+                    </div>
+                    <div class="metadata-card">
+                        <h3>Total Comments</h3>
+                        <div class="value">${summary.total_comments_extracted}</div>
+                        <div class="subtext">From ${summary.total_unique_videos} videos</div>
+                    </div>
+                    <div class="metadata-card">
+                        <h3>Locations Searched</h3>
+                        <div class="value">${summary.locations_searched}</div>
+                        <div class="subtext">${params.jurisdiction.toUpperCase()}</div>
+                    </div>
+                    <div class="metadata-card">
+                        <h3>Keyword</h3>
+                        <div class="value" style="font-size: 20px;">${params.keyword}</div>
+                        <div class="subtext">Date range: ${params.date_range_start} - ${params.date_range_end}</div>
+                    </div>
+                </div>
+
+                ${meta.comments_scraping ? `
+                    <div class="metadata-card" style="margin-bottom: 20px;">
+                        <h3>Comments Scraping Performance</h3>
+                        <div class="stats-row">
+                            <div class="stat-badge">
+                                <strong>${meta.comments_scraping.num_videos_processed}</strong> videos processed
+                            </div>
+                            <div class="stat-badge">
+                                <strong>${meta.comments_scraping.num_comments_found}</strong> comments found
+                            </div>
+                            <div class="stat-badge">
+                                <strong>${meta.comments_scraping.num_comments_with_text}</strong> with text
+                            </div>
+                            <div class="stat-badge">
+                                <strong>${meta.comments_scraping.elapsed_seconds.toFixed(2)}s</strong> elapsed
+                            </div>
+                        </div>
+                    </div>
+                ` : ''}
+
+                <div class="metadata-card">
+                    <h3>Execution Parameters</h3>
+                    <div class="query-meta">
+                        <div><strong>Keyword:</strong> ${params.keyword}</div>
+                        <div><strong>Jurisdiction:</strong> ${params.jurisdiction}</div>
+                        <div><strong>Years Back:</strong> ${params.years_back}</div>
+                        <div><strong>Videos Requested:</strong> ${params.num_videos_requested}</div>
+                        <div><strong>Comments/Video:</strong> ${params.num_comments_per_video_requested}</div>
+                        <div><strong>Method:</strong> ${params.calculation_method}</div>
+                        ${params.original_num_samples ? `<div><strong>Original Samples:</strong> ${params.original_num_samples}</div>` : ''}
+                    </div>
+                </div>
+
+                ${params.location_keywords && params.location_keywords.length > 0 ? `
+                    <div class="metadata-card">
+                        <h3>Location Keywords</h3>
+                        <div>
+                            ${params.location_keywords.map(loc => `<span class="tag">${loc}</span>`).join('')}
+                        </div>
+                    </div>
+                ` : ''}
+
+                ${meta.ai_processing ? `
+                    <div class="metadata-card" style="border-left-color: #f59e0b;">
+                        <h3>AI Processing Summary</h3>
+                        <div class="stats-row">
+                            <div class="stat-badge" style="background: #fef3c7;">
+                                <strong>$${meta.ai_processing.total_cost.total_usd.toFixed(6)}</strong> total cost
+                            </div>
+                            <div class="stat-badge">
+                                <strong>${meta.ai_processing.summarization.videos_with_transcripts}</strong> videos summarized
+                            </div>
+                            <div class="stat-badge">
+                                <strong>${meta.ai_processing.classification.comments_classified}</strong> comments classified
+                            </div>
+                            <div class="stat-badge">
+                                <strong>${meta.ai_processing.model}</strong>
+                            </div>
+                        </div>
+                    </div>
+                ` : ''}
+
+                ${meta.sentiment_summary ? `
+                    <div class="metadata-card">
+                        <h3>Sentiment Distribution</h3>
+                        <div class="stats-row">
+                            <div class="stat-badge" style="background: #dcfce7; color: #166534;">
+                                <strong>${meta.sentiment_summary.positive}</strong> positive
+                            </div>
+                            <div class="stat-badge" style="background: #fee2e2; color: #991b1b;">
+                                <strong>${meta.sentiment_summary.negative}</strong> negative
+                            </div>
+                            <div class="stat-badge" style="background: #f3f4f6; color: #374151;">
+                                <strong>${meta.sentiment_summary.neutral}</strong> neutral
+                            </div>
+                            <div class="stat-badge" style="background: #f3f4f6; color: #6b7280;">
+                                <strong>${meta.sentiment_summary.not_relevant}</strong> not relevant
+                            </div>
+                        </div>
+                    </div>
+                ` : ''}
+            `;
+
+            document.getElementById('overview').innerHTML = html;
+        }
+
+        function renderVideos() {
+            const videos = currentData.videos || [];
+            const searchBox = document.getElementById('videoSearch');
+            
+            let filteredVideos = videos;
+            
+            searchBox.addEventListener('input', function() {
+                const query = this.value.toLowerCase();
+                filteredVideos = videos.filter(v => {
+                    const title = (v.title || '').toLowerCase();
+                    const channel = (v.youtuber || v.channel_name || '').toLowerCase();
+                    const desc = (v.description || '').toLowerCase();
+                    return title.includes(query) || channel.includes(query) || desc.includes(query);
+                });
+                renderVideosList(filteredVideos);
+            });
+
+            renderVideoFilters(videos);
+            renderVideosList(videos);
+        }
+
+        function renderVideoFilters(videos) {
+            const hasErrors = videos.some(v => v.error);
+            const hasSuccess = videos.some(v => v.url && !v.error);
+            
+            if (!hasErrors && !hasSuccess) return;
+
+            const html = `
+                <button class="filter-btn active" data-filter="all">All (${videos.length})</button>
+                ${hasSuccess ? `<button class="filter-btn" data-filter="success">Success (${videos.filter(v => v.url && !v.error).length})</button>` : ''}
+                ${hasErrors ? `<button class="filter-btn" data-filter="error">Errors (${videos.filter(v => v.error).length})</button>` : ''}
+            `;
+
+            document.getElementById('videoFilters').innerHTML = html;
+
+            document.querySelectorAll('#videoFilters .filter-btn').forEach(btn => {
+                btn.addEventListener('click', function() {
+                    document.querySelectorAll('#videoFilters .filter-btn').forEach(b => b.classList.remove('active'));
+                    this.classList.add('active');
+
+                    const filter = this.dataset.filter;
+                    let filtered = videos;
+                    if (filter === 'success') {
+                        filtered = videos.filter(v => v.url && !v.error);
+                    } else if (filter === 'error') {
+                        filtered = videos.filter(v => v.error);
+                    }
+                    renderVideosList(filtered);
+                });
+            });
+        }
+
+        function renderVideosList(videos) {
+            if (!videos || videos.length === 0) {
+                document.getElementById('videosList').innerHTML = '<div class="empty-state"><p>No videos found</p></div>';
+                return;
+            }
+
+            const html = videos.map(v => {
+                if (v.error) {
+                    return `
+                        <div class="video-card">
+                            <span class="tag error">ERROR: ${v.error_code || 'Unknown'}</span>
+                            <div class="video-title">Error: ${v.error}</div>
+                            <div class="video-meta">
+                                ${v.discovery_input ? `
+                                    <div class="video-meta-item">Keyword: ${v.discovery_input.keyword}</div>
+                                    <div class="video-meta-item">Date Range: ${v.discovery_input.start_date} - ${v.discovery_input.end_date}</div>
+                                ` : ''}
+                                ${v.input?.url ? `<div class="video-meta-item">URL: <a href="${v.input.url}" target="_blank">${v.input.url}</a></div>` : ''}
+                            </div>
+                        </div>
+                    `;
+                }
+
+                return `
+                    <div class="video-card">
+                        <div class="video-header">
+                            ${v.preview_image ? `<img src="${v.preview_image}" alt="Thumbnail" class="video-thumbnail">` : ''}
+                            <div class="video-info">
+                                <div class="video-title">
+                                    <a href="${v.url}" target="_blank">${v.title || 'Untitled'}</a>
+                                </div>
+                                <div class="video-meta">
+                                    ${v.youtuber || v.channel_name ? `<div class="video-meta-item">${v.youtuber || v.channel_name}</div>` : ''}
+                                    ${v.views ? `<div class="video-meta-item">${formatNumber(v.views)} views</div>` : ''}
+                                    ${v.likes ? `<div class="video-meta-item">${formatNumber(v.likes)} likes</div>` : ''}
+                                    ${v.num_comments ? `<div class="video-meta-item">${formatNumber(v.num_comments)} comments</div>` : ''}
+                                    ${v.date_posted ? `<div class="video-meta-item">${formatDate(v.date_posted)}</div>` : ''}
+                                </div>
+                                ${v.description ? `
+                                    <div class="video-description" id="desc-${v.video_id}">${escapeHtml(v.description)}</div>
+                                    ${v.description.length > 200 ? `<button class="expand-btn" onclick="toggleDescription('desc-${v.video_id}', this)">Show more</button>` : ''}
+                                ` : ''}
+                            </div>
+                        </div>
+                    </div>
+                `;
+            }).join('');
+
+            document.getElementById('videosList').innerHTML = html;
+        }
+
+        function renderComments() {
+            const comments = currentData.comments || [];
+            const searchBox = document.getElementById('commentSearch');
+            
+            searchBox.addEventListener('input', function() {
+                const query = this.value.toLowerCase();
+                const filtered = comments.filter(c => {
+                    const text = (c.text || '').toLowerCase();
+                    const author = (c.metadata?.author || '').toLowerCase();
+                    const videoTitle = (c.metadata?.video_title || '').toLowerCase();
+                    return text.includes(query) || author.includes(query) || videoTitle.includes(query);
+                });
+                renderCommentsList(filtered);
+            });
+
+            renderCommentsList(comments);
+        }
+
+        function renderCommentsList(comments) {
+            if (!comments || comments.length === 0) {
+                document.getElementById('commentsList').innerHTML = '<div class="empty-state"><p>No comments found</p></div>';
+                return;
+            }
+
+            const sentimentColors = {
+                'positive': '#22c55e',
+                'negative': '#ef4444',
+                'neutral': '#6b7280',
+                'not_relevant': '#9ca3af',
+                'unclassified': '#d1d5db'
+            };
+
+            const html = comments.map(c => `
+                <div class="comment-card" style="border-left: 4px solid ${sentimentColors[c.sentiment] || '#d1d5db'};">
+                    ${c.sentiment ? `
+                        <div style="margin-bottom: 8px;">
+                            <span class="tag" style="background: ${sentimentColors[c.sentiment]}; color: white;">
+                                ${c.sentiment.replace('_', ' ').toUpperCase()}
+                            </span>
+                        </div>
+                    ` : ''}
+                    <div class="comment-text">${escapeHtml(c.text || '')}</div>
+                    <div class="comment-meta">
+                        ${c.metadata?.author ? `<div><strong>Author:</strong> ${escapeHtml(c.metadata.author)}</div>` : ''}
+                        ${c.metadata?.date ? `<div><strong>Date:</strong> ${formatDate(c.metadata.date)}</div>` : ''}
+                        ${c.metadata?.likes ? `<div><strong>Likes:</strong> ${formatNumber(c.metadata.likes)}</div>` : ''}
+                        ${c.metadata?.comment_replies ? `<div><strong>Replies:</strong> ${c.metadata.comment_replies}</div>` : ''}
+                    </div>
+                    ${c.metadata?.video_title ? `
+                        <div style="margin-top: 12px; padding-top: 12px; border-top: 1px solid #f0f0f0; font-size: 13px; color: #666;">
+                            <strong>Video:</strong> <a href="${c.metadata.video_url}" target="_blank">${escapeHtml(c.metadata.video_title)}</a>
+                        </div>
+                    ` : ''}
+                </div>
+            `).join('');
+
+            document.getElementById('commentsList').innerHTML = html;
+        }
+
+        function renderQueries() {
+            const queries = currentData.metadata?.search_queries_performed || [];
+            
+            if (queries.length === 0) {
+                document.getElementById('queriesList').innerHTML = '<div class="empty-state"><p>No search queries found</p></div>';
+                return;
+            }
+
+            const html = queries.map(q => `
+                <div class="query-card">
+                    <h4>${q.search_keyword}</h4>
+                    <div class="query-meta">
+                        ${q.location ? `<div><strong>Location:</strong> ${q.location}</div>` : ''}
+                        <div><strong>Videos Requested:</strong> ${q.num_videos_requested}</div>
+                        <div><strong>Videos Found:</strong> ${q.num_videos_found}</div>
+                        ${q.elapsed_seconds ? `<div><strong>Time:</strong> ${q.elapsed_seconds.toFixed(2)}s</div>` : ''}
+                        ${q.query_start_time ? `<div><strong>Started:</strong> ${formatDate(q.query_start_time)}</div>` : ''}
+                    </div>
+                </div>
+            `).join('');
+
+            document.getElementById('queriesList').innerHTML = html;
+        }
+
+        function renderVideoSummaries() {
+            const summaries = currentData.video_summaries || [];
+            
+            if (summaries.length === 0) {
+                document.getElementById('summariesList').innerHTML = '<div class="empty-state"><p>No video summaries available</p></div>';
+                return;
+            }
+
+            const html = summaries.map(s => `
+                <div class="video-card">
+                    <div class="video-title">
+                        <a href="${s.video_url}" target="_blank">${escapeHtml(s.video_title)}</a>
+                    </div>
+                    <div class="video-description" style="max-height: none; margin-top: 15px;">
+                        <strong>AI Summary:</strong><br>
+                        ${escapeHtml(s.summary)}
+                    </div>
+                    <div class="stats-row" style="margin-top: 15px;">
+                        <div class="stat-badge">
+                            <strong>${formatNumber(s.transcript_length)}</strong> chars in transcript
+                        </div>
+                    </div>
+                </div>
+            `).join('');
+
+            document.getElementById('summariesList').innerHTML = html;
+        }
+
+        function renderSentimentAnalysis() {
+            const sentimentSummary = currentData.metadata?.sentiment_summary;
+            const comments = currentData.comments || [];
+            
+            if (!sentimentSummary) {
+                document.getElementById('sentimentChart').innerHTML = '<div class="empty-state"><p>No sentiment analysis data available</p></div>';
+                return;
+            }
+
+            const total = sentimentSummary.positive + sentimentSummary.negative + sentimentSummary.neutral + sentimentSummary.not_relevant;
+            
+            const chartHtml = `
+                <div class="metadata-grid">
+                    <div class="metadata-card" style="border-left-color: #22c55e;">
+                        <h3>Positive</h3>
+                        <div class="value" style="color: #22c55e;">${sentimentSummary.positive}</div>
+                        <div class="subtext">${total > 0 ? ((sentimentSummary.positive / total) * 100).toFixed(1) : 0}%</div>
+                    </div>
+                    <div class="metadata-card" style="border-left-color: #ef4444;">
+                        <h3>Negative</h3>
+                        <div class="value" style="color: #ef4444;">${sentimentSummary.negative}</div>
+                        <div class="subtext">${total > 0 ? ((sentimentSummary.negative / total) * 100).toFixed(1) : 0}%</div>
+                    </div>
+                    <div class="metadata-card" style="border-left-color: #6b7280;">
+                        <h3>Neutral</h3>
+                        <div class="value" style="color: #6b7280;">${sentimentSummary.neutral}</div>
+                        <div class="subtext">${total > 0 ? ((sentimentSummary.neutral / total) * 100).toFixed(1) : 0}%</div>
+                    </div>
+                    <div class="metadata-card" style="border-left-color: #9ca3af;">
+                        <h3>Not Relevant</h3>
+                        <div class="value" style="color: #9ca3af;">${sentimentSummary.not_relevant}</div>
+                        <div class="subtext">${total > 0 ? ((sentimentSummary.not_relevant / total) * 100).toFixed(1) : 0}%</div>
+                    </div>
+                </div>
+            `;
+            
+            document.getElementById('sentimentChart').innerHTML = chartHtml;
+
+            const sentimentColors = {
+                'positive': '#22c55e',
+                'negative': '#ef4444',
+                'neutral': '#6b7280',
+                'not_relevant': '#9ca3af',
+                'unclassified': '#d1d5db'
+            };
+
+            const breakdownHtml = comments.filter(c => c.sentiment).map(c => `
+                <div class="comment-card" style="border-left: 4px solid ${sentimentColors[c.sentiment] || '#d1d5db'};">
+                    <div style="margin-bottom: 8px;">
+                        <span class="tag" style="background: ${sentimentColors[c.sentiment] || '#d1d5db'}; color: white;">
+                            ${c.sentiment?.replace('_', ' ').toUpperCase() || 'UNCLASSIFIED'}
+                        </span>
+                    </div>
+                    <div class="comment-text">${escapeHtml(c.text || '')}</div>
+                    ${c.sentiment_reasoning ? `
+                        <div style="margin-top: 8px; font-size: 12px; color: #666; font-style: italic;">
+                            Reasoning: ${escapeHtml(c.sentiment_reasoning)}
+                        </div>
+                    ` : ''}
+                    <div class="comment-meta">
+                        ${c.metadata?.author ? `<div><strong>Author:</strong> ${escapeHtml(c.metadata.author)}</div>` : ''}
+                        ${c.metadata?.video_title ? `<div><strong>Video:</strong> ${escapeHtml(c.metadata.video_title)}</div>` : ''}
+                    </div>
+                </div>
+            `).join('');
+
+            document.getElementById('sentimentBreakdown').innerHTML = breakdownHtml;
+        }
+
+        function renderCosts() {
+            const aiProcessing = currentData.metadata?.ai_processing;
+            
+            if (!aiProcessing) {
+                document.getElementById('costDetails').innerHTML = '<div class="empty-state"><p>No AI cost data available</p></div>';
+                return;
+            }
+
+            const html = `
+                <div class="metadata-grid">
+                    <div class="metadata-card" style="border-left-color: #f59e0b;">
+                        <h3>Total Cost</h3>
+                        <div class="value" style="color: #f59e0b;">$${aiProcessing.total_cost.total_usd.toFixed(6)}</div>
+                        <div class="subtext">${formatNumber(aiProcessing.total_cost.input_tokens + aiProcessing.total_cost.output_tokens)} total tokens</div>
+                    </div>
+                    <div class="metadata-card">
+                        <h3>Summarization</h3>
+                        <div class="value">$${aiProcessing.summarization.cost_usd.toFixed(6)}</div>
+                        <div class="subtext">${aiProcessing.summarization.videos_with_transcripts} videos</div>
+                    </div>
+                    <div class="metadata-card">
+                        <h3>Classification</h3>
+                        <div class="value">$${aiProcessing.classification.cost_usd.toFixed(6)}</div>
+                        <div class="subtext">${aiProcessing.classification.comments_classified} comments</div>
+                    </div>
+                    <div class="metadata-card">
+                        <h3>Model</h3>
+                        <div class="value" style="font-size: 18px;">${aiProcessing.model}</div>
+                    </div>
+                </div>
+
+                <div class="metadata-card" style="margin-top: 20px;">
+                    <h3>Token Breakdown</h3>
+                    <div class="query-meta" style="margin-top: 15px;">
+                        <div><strong>Summarization Input:</strong> ${formatNumber(aiProcessing.summarization.input_tokens)} tokens</div>
+                        <div><strong>Summarization Output:</strong> ${formatNumber(aiProcessing.summarization.output_tokens)} tokens</div>
+                        <div><strong>Classification Input:</strong> ${formatNumber(aiProcessing.classification.input_tokens)} tokens</div>
+                        <div><strong>Classification Output:</strong> ${formatNumber(aiProcessing.classification.output_tokens)} tokens</div>
+                    </div>
+                </div>
+            `;
+
+            document.getElementById('costDetails').innerHTML = html;
+        }
+
+        function renderRawJson() {
+            document.getElementById('rawJson').textContent = JSON.stringify(currentData, null, 2);
+        }
+
+        function toggleDescription(id, btn) {
+            const elem = document.getElementById(id);
+            elem.classList.toggle('expanded');
+            btn.textContent = elem.classList.contains('expanded') ? 'Show less' : 'Show more';
+        }
+
+        function formatNumber(num) {
+            return num.toLocaleString();
+        }
+
+        function formatDate(dateStr) {
+            try {
+                const date = new Date(dateStr);
+                return date.toLocaleDateString() + ' ' + date.toLocaleTimeString();
+            } catch {
+                return dateStr;
+            }
+        }
+
+        function escapeHtml(text) {
+            const div = document.createElement('div');
+            div.textContent = text;
+            return div.innerHTML;
+        }
+    </script>
+</body>
+</html>
