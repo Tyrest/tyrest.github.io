@@ -1,0 +1,303 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ELO Rating Tracker</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;700&display=swap" rel="stylesheet">
+    <style>
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: #0f172a;
+            color: #e2e8f0;
+        }
+
+        .hero-gradient {
+            background: linear-gradient(135deg, #1e3a5f 0%, #0f172a 60%, #1a1a2e 100%);
+        }
+
+        .card-bg {
+            background: rgba(255, 255, 255, 0.05);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+        }
+
+        .accent-blue {
+            color: #60a5fa;
+        }
+
+        .btn-visit {
+            background: linear-gradient(135deg, #3b82f6, #1d4ed8);
+            transition: all 0.3s ease;
+            box-shadow: 0 4px 15px rgba(59, 130, 246, 0.4);
+        }
+
+        .btn-visit:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 20px rgba(59, 130, 246, 0.6);
+        }
+
+        .feature-icon {
+            background: rgba(59, 130, 246, 0.15);
+            border: 1px solid rgba(59, 130, 246, 0.3);
+        }
+
+        .screenshot-frame {
+            border: 2px solid rgba(255, 255, 255, 0.1);
+            border-radius: 12px;
+            overflow: hidden;
+            background: #1e293b;
+            box-shadow: 0 25px 50px rgba(0, 0, 0, 0.5);
+        }
+
+        .screenshot-chrome {
+            background: #1e293b;
+            padding: 10px 14px;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+        }
+
+        .dot {
+            width: 12px;
+            height: 12px;
+            border-radius: 50%;
+        }
+
+        .iframe-container {
+            position: relative;
+            width: 100%;
+            overflow: hidden;
+        }
+
+        .iframe-container iframe {
+            width: 100%;
+            border: none;
+            display: block;
+        }
+
+        .iframe-fallback {
+            display: none;
+            padding: 3rem 2rem;
+            text-align: center;
+        }
+
+        .hidden-initially {
+            opacity: 0;
+            transform: translateY(20px);
+            transition: opacity 0.6s ease, transform 0.6s ease;
+        }
+
+        .visible {
+            opacity: 1;
+            transform: translateY(0);
+        }
+    </style>
+</head>
+
+<body class="min-h-screen">
+
+    <!-- Hero Section -->
+    <section class="hero-gradient py-20 px-6">
+        <div class="max-w-4xl mx-auto text-center">
+            <div class="inline-block mb-4 px-4 py-1.5 rounded-full text-sm font-medium"
+                style="background: rgba(59,130,246,0.15); border: 1px solid rgba(59,130,246,0.3); color: #93c5fd;">
+                Live Web App
+            </div>
+            <h1 class="text-5xl md:text-6xl font-bold mb-6 tracking-tight">
+                <span class="accent-blue">ELO</span> Rating Tracker
+            </h1>
+            <p class="text-xl text-slate-300 max-w-2xl mx-auto mb-10 leading-relaxed">
+                A clean, fast tool for tracking and visualizing competitive ELO ratings — see your skill progression,
+                compare matchups, and understand expected outcomes at a glance.
+            </p>
+            <a href="https://elo.tylerho.com" target="_blank" rel="noopener noreferrer"
+                class="btn-visit inline-flex items-center gap-3 px-8 py-4 rounded-xl text-white font-semibold text-lg">
+                <svg xmlns="http://www.w3.org/2000/svg" class="w-5 h-5" fill="none" viewBox="0 0 24 24"
+                    stroke="currentColor">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                        d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" />
+                </svg>
+                Visit elo.tylerho.com
+            </a>
+        </div>
+    </section>
+
+    <!-- What is ELO Section -->
+    <section class="py-16 px-6">
+        <div class="max-w-4xl mx-auto">
+            <h2 class="text-3xl font-bold mb-8 text-center">What is ELO?</h2>
+            <div class="grid md:grid-cols-2 gap-6">
+                <div class="card-bg rounded-2xl p-6 hidden-initially">
+                    <div class="feature-icon w-12 h-12 rounded-xl flex items-center justify-center mb-4">
+                        <svg xmlns="http://www.w3.org/2000/svg" class="w-6 h-6 accent-blue" fill="none"
+                            viewBox="0 0 24 24" stroke="currentColor">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" />
+                        </svg>
+                    </div>
+                    <h3 class="text-xl font-semibold mb-2">Skill-Based Ranking</h3>
+                    <p class="text-slate-400 leading-relaxed">
+                        The Elo rating system is a method for calculating the relative skill levels of players in
+                        competitive games. Developed by physicist Arpad Elo, it's used in chess, video games, and
+                        sports worldwide.
+                    </p>
+                </div>
+                <div class="card-bg rounded-2xl p-6 hidden-initially" style="transition-delay: 0.1s">
+                    <div class="feature-icon w-12 h-12 rounded-xl flex items-center justify-center mb-4">
+                        <svg xmlns="http://www.w3.org/2000/svg" class="w-6 h-6 accent-blue" fill="none"
+                            viewBox="0 0 24 24" stroke="currentColor">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                d="M13 7h8m0 0v8m0-8l-8 8-4-4-6 6" />
+                        </svg>
+                    </div>
+                    <h3 class="text-xl font-semibold mb-2">Track Progression</h3>
+                    <p class="text-slate-400 leading-relaxed">
+                        Watch your rating climb over time. The tracker visualizes your performance history so you
+                        can see which sessions boosted your rank and identify trends in your competitive play.
+                    </p>
+                </div>
+                <div class="card-bg rounded-2xl p-6 hidden-initially" style="transition-delay: 0.2s">
+                    <div class="feature-icon w-12 h-12 rounded-xl flex items-center justify-center mb-4">
+                        <svg xmlns="http://www.w3.org/2000/svg" class="w-6 h-6 accent-blue" fill="none"
+                            viewBox="0 0 24 24" stroke="currentColor">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                d="M9 7h6m0 10v-3m-3 3h.01M9 17h.01M9 14h.01M12 14h.01M15 11h.01M12 11h.01M9 11h.01M7 21h10a2 2 0 002-2V5a2 2 0 00-2-2H7a2 2 0 00-2 2v14a2 2 0 002 2z" />
+                        </svg>
+                    </div>
+                    <h3 class="text-xl font-semibold mb-2">Calculate Outcomes</h3>
+                    <p class="text-slate-400 leading-relaxed">
+                        Given two players' ratings, ELO predicts the expected probability of each outcome. Use the
+                        calculator to understand how much a win or loss will shift your score.
+                    </p>
+                </div>
+                <div class="card-bg rounded-2xl p-6 hidden-initially" style="transition-delay: 0.3s">
+                    <div class="feature-icon w-12 h-12 rounded-xl flex items-center justify-center mb-4">
+                        <svg xmlns="http://www.w3.org/2000/svg" class="w-6 h-6 accent-blue" fill="none"
+                            viewBox="0 0 24 24" stroke="currentColor">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0z" />
+                        </svg>
+                    </div>
+                    <h3 class="text-xl font-semibold mb-2">Compare Players</h3>
+                    <p class="text-slate-400 leading-relaxed">
+                        Head-to-head comparison tools let you pit any two players against each other, showing
+                        relative strength and historical match outcomes side by side.
+                    </p>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Live Preview Section -->
+    <section class="py-16 px-6">
+        <div class="max-w-5xl mx-auto">
+            <h2 class="text-3xl font-bold mb-4 text-center">Live Preview</h2>
+            <p class="text-slate-400 text-center mb-10">
+                See the app in action below, or
+                <a href="https://elo.tylerho.com" target="_blank" rel="noopener noreferrer"
+                    class="accent-blue underline underline-offset-2 hover:text-blue-300 transition-colors">
+                    open it in a new tab
+                </a>
+                for the full experience.
+            </p>
+
+            <!-- Screenshot 1: Full App Preview -->
+            <div class="screenshot-frame mb-8 hidden-initially">
+                <div class="screenshot-chrome">
+                    <span class="dot" style="background:#ff5f57;"></span>
+                    <span class="dot" style="background:#febc2e;"></span>
+                    <span class="dot" style="background:#28c840;"></span>
+                    <span class="flex-1 text-center text-xs text-slate-500 font-mono">elo.tylerho.com</span>
+                </div>
+                <div class="iframe-container" style="height: 520px;">
+                    <iframe
+                        src="https://elo.tylerho.com"
+                        title="ELO Rating Tracker — main view"
+                        loading="lazy"
+                        style="height: 520px; transform-origin: top left;"
+                        onload="this.closest('.iframe-container').querySelector('.iframe-fallback').style.display='none';"
+                        onerror="showFallback(this);">
+                    </iframe>
+                    <div class="iframe-fallback" style="display: none;">
+                        <svg xmlns="http://www.w3.org/2000/svg" class="w-12 h-12 mx-auto mb-4 text-slate-600" fill="none"
+                            viewBox="0 0 24 24" stroke="currentColor">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5"
+                                d="M9.75 17L9 20l-1 1h8l-1-1-.75-3M3 13h18M5 17h14a2 2 0 002-2V5a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" />
+                        </svg>
+                        <p class="text-slate-400 mb-4">Preview couldn't load inline.</p>
+                        <a href="https://elo.tylerho.com" target="_blank" rel="noopener noreferrer"
+                            class="btn-visit inline-flex items-center gap-2 px-6 py-3 rounded-lg text-white font-semibold">
+                            Open elo.tylerho.com
+                        </a>
+                    </div>
+                </div>
+            </div>
+
+        </div>
+    </section>
+
+    <!-- Call to Action -->
+    <section class="py-20 px-6">
+        <div class="max-w-2xl mx-auto text-center card-bg rounded-3xl p-12 hidden-initially">
+            <h2 class="text-3xl font-bold mb-4">Ready to track your ELO?</h2>
+            <p class="text-slate-400 mb-8 text-lg">
+                Head over to the live app and start tracking your competitive ratings today.
+            </p>
+            <a href="https://elo.tylerho.com" target="_blank" rel="noopener noreferrer"
+                class="btn-visit inline-flex items-center gap-3 px-8 py-4 rounded-xl text-white font-semibold text-lg">
+                <svg xmlns="http://www.w3.org/2000/svg" class="w-5 h-5" fill="none" viewBox="0 0 24 24"
+                    stroke="currentColor">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                        d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" />
+                </svg>
+                Visit elo.tylerho.com
+            </a>
+        </div>
+    </section>
+
+    <script>
+        function showFallback(iframe) {
+            const container = iframe.closest('.iframe-container');
+            if (container) {
+                iframe.style.display = 'none';
+                const fallback = container.querySelector('.iframe-fallback');
+                if (fallback) fallback.style.display = 'block';
+            }
+        }
+
+        // Reveal animations using IntersectionObserver
+        const observer = new IntersectionObserver((entries) => {
+            entries.forEach(entry => {
+                if (entry.isIntersecting) {
+                    entry.target.classList.add('visible');
+                }
+            });
+        }, { threshold: 0.1 });
+
+        document.querySelectorAll('.hidden-initially').forEach(el => observer.observe(el));
+
+        // Track which iframes have fired their load event
+        document.querySelectorAll('.iframe-container iframe').forEach(iframe => {
+            iframe.addEventListener('load', () => {
+                iframe.dataset.loaded = 'true';
+            });
+        });
+
+        // Show fallback for any iframe that hasn't loaded after 8 seconds
+        setTimeout(() => {
+            document.querySelectorAll('.iframe-container iframe').forEach(iframe => {
+                if (!iframe.dataset.loaded) {
+                    showFallback(iframe);
+                }
+            });
+        }, 8000);
+    </script>
+
+</body>
+
+</html>
