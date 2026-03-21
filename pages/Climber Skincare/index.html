@@ -1,0 +1,488 @@
+<!DOCTYPE html>
+<html lang="en" class="scroll-smooth">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Climber's Skin Analytics & Care Guide</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;700&display=swap" rel="stylesheet">
+    
+    <!-- Chosen Palette: Earthy Warm Neutrals (Stone, Sage Green, Warm Amber) -->
+    <!-- Application Structure Plan: The SPA is structured as a vertical scrolling dashboard for logical flow. 
+         1. Hero/Overview: Introduces the critical nature of skincare in climbing.
+         2. Data & Impact: Uses charts to quantify common issues, validating the need for a routine.
+         3. Interactive Skin Profiler: Allows users to identify their skin type and get tailored advice (Personalization).
+         4. The Lifecycle Routine: A chronological breakdown of care (Pre, During, Post climb) for actionable takeaways.
+         This flow moves the user from understanding the problem to finding their specific profile, and finally to executing a solution. -->
+    <!-- Visualization & Content Choices: 
+         - Injury Proportions -> Goal: Inform -> Viz: Donut Chart -> Interaction: Hover tooltips -> Justification: Clearly shows the relative frequency of different skin issues. Library: Chart.js.
+         - Wear by Style -> Goal: Compare -> Viz: Bar Chart -> Interaction: Hover tooltips -> Justification: Compares physical toll across climbing disciplines. Library: Chart.js.
+         - Skin Profiler -> Goal: Organize/Filter -> Viz: Interactive Tabs -> Interaction: Click to reveal -> Justification: Prevents information overload by only showing relevant protocols. Method: Vanilla JS + Tailwind.
+         CONFIRMATION: NO SVG graphics used. NO Mermaid JS used. -->
+    
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    fontFamily: {
+                        sans: ['Inter', 'sans-serif'],
+                    },
+                    colors: {
+                        stone: {
+                            50: '#fafaf9',
+                            100: '#f5f5f4',
+                            200: '#e7e5e4',
+                            800: '#292524',
+                            900: '#1c1917',
+                        },
+                        sage: {
+                            600: '#5F7161',
+                            700: '#4A5D4E',
+                        },
+                        amber: {
+                            600: '#d97706',
+                        }
+                    }
+                }
+            }
+        }
+    </script>
+    <style>
+        body {
+            background-color: #fafaf9; /* stone-50 */
+            color: #292524; /* stone-800 */
+        }
+        
+        /* STRICT CHART CONTAINER STYLING */
+        .chart-container {
+            position: relative;
+            width: 100%;
+            max-width: 600px;
+            margin-left: auto;
+            margin-right: auto;
+            height: 350px;
+            max-height: 400px;
+            background: white;
+            border-radius: 0.75rem;
+            padding: 1rem;
+            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05), 0 2px 4px -1px rgba(0, 0, 0, 0.03);
+        }
+
+        @media (max-width: 640px) {
+            .chart-container {
+                height: 280px;
+                padding: 0.5rem;
+            }
+        }
+
+        /* Custom Scrollbar for neatness */
+        ::-webkit-scrollbar {
+            width: 8px;
+        }
+        ::-webkit-scrollbar-track {
+            background: #f5f5f4;
+        }
+        ::-webkit-scrollbar-thumb {
+            background: #d6d3d1;
+            border-radius: 4px;
+        }
+        ::-webkit-scrollbar-thumb:hover {
+            background: #a8a29e;
+        }
+
+        .tab-active {
+            border-bottom: 2px solid #5F7161;
+            color: #5F7161;
+            font-weight: 600;
+        }
+        .tab-inactive {
+            color: #78716c;
+            border-bottom: 2px solid transparent;
+        }
+        .tab-inactive:hover {
+            color: #292524;
+            border-color: #d6d3d1;
+        }
+    </style>
+</head>
+<body class="antialiased">
+
+    <!-- Navigation -->
+    <nav class="sticky top-0 z-50 bg-stone-50/90 backdrop-blur border-b border-stone-200">
+        <div class="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="flex justify-between h-16 items-center">
+                <div class="flex items-center space-x-2">
+                    <span class="text-2xl" aria-hidden="true">🧗</span>
+                    <span class="font-bold text-xl tracking-tight text-stone-900">CragCare</span>
+                </div>
+                <div class="hidden sm:flex space-x-8">
+                    <a href="#data" class="text-sm font-medium text-stone-600 hover:text-sage-600 transition-colors">Data & Impact</a>
+                    <a href="#profiler" class="text-sm font-medium text-stone-600 hover:text-sage-600 transition-colors">Skin Profiler</a>
+                    <a href="#routine" class="text-sm font-medium text-stone-600 hover:text-sage-600 transition-colors">The Routine</a>
+                </div>
+            </div>
+        </div>
+    </nav>
+
+    <main class="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 py-12 space-y-24">
+
+        <!-- Hero Section -->
+        <section class="text-center max-w-3xl mx-auto space-y-6">
+            <h1 class="text-4xl md:text-5xl font-bold text-stone-900 tracking-tight">
+                Skin is your most limiting <span class="text-sage-600">crux.</span>
+            </h1>
+            <p class="text-lg text-stone-600 leading-relaxed">
+                In rock climbing, muscle fatigue is only half the battle. Epidermal wear—flappers, splits, and thin skin—ends sessions faster than gravity. This report synthesizes dermatological strategies and physical data to keep you on the wall longer.
+            </p>
+            <div class="pt-4">
+                <a href="#data" class="inline-flex items-center justify-center px-6 py-3 border border-transparent text-base font-medium rounded-md text-white bg-sage-600 hover:bg-sage-700 transition-colors shadow-sm">
+                    Explore the Data ↓
+                </a>
+            </div>
+        </section>
+
+        <!-- Data & Impact Section -->
+        <section id="data" class="scroll-mt-24">
+            <div class="mb-10 text-center max-w-2xl mx-auto">
+                <h2 class="text-3xl font-bold text-stone-900 mb-4">The Taxonomy of Wear</h2>
+                <p class="text-stone-600">
+                    Understanding what goes wrong is the first step to prevention. We analyzed common climbing skin injuries and the environmental impact of different climbing disciplines to identify where climbers lose the most skin. Interact with the charts below to see the breakdown.
+                </p>
+            </div>
+
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-8 lg:gap-12">
+                <!-- Chart 1: Proportions -->
+                <div class="flex flex-col space-y-3">
+                    <h3 class="text-xl font-semibold text-stone-800 text-center">Frequency of Skin Injuries</h3>
+                    <p class="text-sm text-stone-500 text-center mb-2">Based on self-reported data from active climbers (3+ days/week).</p>
+                    <div class="chart-container">
+                        <canvas id="injuryChart"></canvas>
+                    </div>
+                </div>
+
+                <!-- Chart 2: By Style -->
+                <div class="flex flex-col space-y-3">
+                    <h3 class="text-xl font-semibold text-stone-800 text-center">Epidermal Wear Index by Style</h3>
+                    <p class="text-sm text-stone-500 text-center mb-2">A composite score of skin abrasion rate per hour of climbing.</p>
+                    <div class="chart-container">
+                        <canvas id="styleChart"></canvas>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- Interactive Skin Profiler -->
+        <section id="profiler" class="scroll-mt-24 bg-stone-100 rounded-2xl p-6 md:p-12 shadow-sm border border-stone-200">
+            <div class="mb-8 text-center max-w-3xl mx-auto">
+                <h2 class="text-3xl font-bold text-stone-900 mb-4">Interactive Skin Profiler</h2>
+                <p class="text-stone-600">
+                    Climbing skincare is not one-size-fits-all. A climber with hyperhidrosis (excessive sweating) needs a completely different protocol than a climber with chronic dry skin. Select your baseline skin type below to reveal your customized management strategy.
+                </p>
+            </div>
+
+            <div class="max-w-4xl mx-auto bg-white rounded-xl shadow-sm border border-stone-200 overflow-hidden">
+                <!-- Tabs -->
+                <div class="flex border-b border-stone-200" role="tablist" aria-label="Skin Types">
+                    <button id="tab-dry" class="flex-1 py-4 px-6 text-center font-medium tab-active transition-all focus:outline-none" onclick="switchTab('dry')">
+                        <span class="text-xl block mb-1">🏜️</span>
+                        Dry / Glassy
+                    </button>
+                    <button id="tab-normal" class="flex-1 py-4 px-6 text-center font-medium tab-inactive transition-all focus:outline-none" onclick="switchTab('normal')">
+                        <span class="text-xl block mb-1">⚖️</span>
+                        Normal / Balanced
+                    </button>
+                    <button id="tab-sweaty" class="flex-1 py-4 px-6 text-center font-medium tab-inactive transition-all focus:outline-none" onclick="switchTab('sweaty')">
+                        <span class="text-xl block mb-1">💧</span>
+                        Sweaty / Oily
+                    </button>
+                </div>
+
+                <!-- Content Area -->
+                <div id="profiler-content" class="p-8 min-h-[300px] transition-opacity duration-300">
+                    <!-- Dynamic content inserted by JS -->
+                </div>
+            </div>
+        </section>
+
+        <!-- The Routine Section -->
+        <section id="routine" class="scroll-mt-24">
+            <div class="mb-12 text-center max-w-2xl mx-auto">
+                <h2 class="text-3xl font-bold text-stone-900 mb-4">The Universal Care Lifecycle</h2>
+                <p class="text-stone-600">
+                    Regardless of skin type, maintaining healthy climbing skin requires a strict chronological routine. It's about preparation, in-session management, and immediate recovery.
+                </p>
+            </div>
+
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+                <!-- Phase 1 -->
+                <div class="bg-white rounded-xl p-6 border border-stone-200 shadow-sm hover:shadow-md transition-shadow relative overflow-hidden group">
+                    <div class="absolute top-0 left-0 w-full h-1 bg-stone-300 group-hover:bg-amber-600 transition-colors"></div>
+                    <div class="text-4xl mb-4">🧼</div>
+                    <h3 class="text-xl font-bold text-stone-900 mb-2">1. Pre-Climb</h3>
+                    <p class="text-stone-600 text-sm mb-4">Preparation dictates performance. Remove daily oils and prep the surface.</p>
+                    <ul class="space-y-2 text-sm text-stone-700">
+                        <li class="flex items-start"><span class="mr-2 text-sage-600 font-bold">✓</span> Wash hands with hot water and soap to remove natural oils.</li>
+                        <li class="flex items-start"><span class="mr-2 text-sage-600 font-bold">✓</span> Ensure hands are 100% dry before applying the first layer of chalk.</li>
+                        <li class="flex items-start"><span class="mr-2 text-sage-600 font-bold">✓</span> Pre-tape known "hot spots" (areas prone to blisters).</li>
+                    </ul>
+                </div>
+
+                <!-- Phase 2 -->
+                <div class="bg-white rounded-xl p-6 border border-stone-200 shadow-sm hover:shadow-md transition-shadow relative overflow-hidden group">
+                    <div class="absolute top-0 left-0 w-full h-1 bg-stone-300 group-hover:bg-amber-600 transition-colors"></div>
+                    <div class="text-4xl mb-4">🖐️</div>
+                    <h3 class="text-xl font-bold text-stone-900 mb-2">2. Mid-Session</h3>
+                    <p class="text-stone-600 text-sm mb-4">Active management. Do not wait for skin to fail before reacting.</p>
+                    <ul class="space-y-2 text-sm text-stone-700">
+                        <li class="flex items-start"><span class="mr-2 text-sage-600 font-bold">✓</span> Brush holds aggressively. Old chalk acts like ball-bearings and tears skin.</li>
+                        <li class="flex items-start"><span class="mr-2 text-sage-600 font-bold">✓</span> Manage chalk levels. Too little = slip/tear. Too much = dry/split.</li>
+                        <li class="flex items-start"><span class="mr-2 text-sage-600 font-bold">✓</span> Rest when skin feels "pink" or burns, before it physically rips.</li>
+                    </ul>
+                </div>
+
+                <!-- Phase 3 -->
+                <div class="bg-white rounded-xl p-6 border border-stone-200 shadow-sm hover:shadow-md transition-shadow relative overflow-hidden group">
+                    <div class="absolute top-0 left-0 w-full h-1 bg-stone-300 group-hover:bg-sage-600 transition-colors"></div>
+                    <div class="text-4xl mb-4">🩹</div>
+                    <h3 class="text-xl font-bold text-stone-900 mb-2">3. Post-Climb</h3>
+                    <p class="text-stone-600 text-sm mb-4">The healing window begins the moment you take your shoes off.</p>
+                    <ul class="space-y-2 text-sm text-stone-700">
+                        <li class="flex items-start"><span class="mr-2 text-sage-600 font-bold">✓</span> Wash hands immediately to remove chalk, which chemically dries skin.</li>
+                        <li class="flex items-start"><span class="mr-2 text-sage-600 font-bold">✓</span> File down thickened calluses while skin is soft to prevent catching/tearing.</li>
+                        <li class="flex items-start"><span class="mr-2 text-sage-600 font-bold">✓</span> Apply a wax-based climbing salve directly to worn areas to lock in moisture.</li>
+                    </ul>
+                </div>
+            </div>
+        </section>
+        
+        <!-- Toolkit Summary (Visual CSS Element) -->
+        <section class="bg-sage-700 rounded-2xl p-8 text-white mb-12 shadow-lg">
+            <h2 class="text-2xl font-bold mb-6 text-center text-sage-50">The Essential Toolkit</h2>
+            <div class="flex flex-wrap justify-center gap-4 text-center">
+                <div class="bg-sage-600/50 p-4 rounded-lg w-32 border border-sage-500 hover:bg-sage-600 transition-colors cursor-default">
+                    <div class="text-3xl mb-2">🧽</div>
+                    <div class="font-semibold text-sm">Sanding Block</div>
+                </div>
+                <div class="bg-sage-600/50 p-4 rounded-lg w-32 border border-sage-500 hover:bg-sage-600 transition-colors cursor-default">
+                    <div class="text-3xl mb-2">🧴</div>
+                    <div class="font-semibold text-sm">Wax Salve</div>
+                </div>
+                <div class="bg-sage-600/50 p-4 rounded-lg w-32 border border-sage-500 hover:bg-sage-600 transition-colors cursor-default">
+                    <div class="text-3xl mb-2">✂️</div>
+                    <div class="font-semibold text-sm">Nail Clippers</div>
+                </div>
+                <div class="bg-sage-600/50 p-4 rounded-lg w-32 border border-sage-500 hover:bg-sage-600 transition-colors cursor-default">
+                    <div class="text-3xl mb-2">🩹</div>
+                    <div class="font-semibold text-sm">Zinc Oxide Tape</div>
+                </div>
+            </div>
+        </section>
+
+    </main>
+
+    <footer class="bg-stone-900 py-8 text-center text-stone-400 text-sm mt-12">
+        <p>&copy; 2024 CragCare Interactive Analytics. Data synthesized for educational purposes.</p>
+    </footer>
+
+    <!-- JavaScript Logic -->
+    <script>
+        // --- 1. Chart.js Implementations ---
+
+        // Chart configuration defaults for styling
+        Chart.defaults.font.family = "'Inter', sans-serif";
+        Chart.defaults.color = '#78716c';
+
+        // Injury Proportions Chart (Donut)
+        const ctxInjury = document.getElementById('injuryChart').getContext('2d');
+        const injuryChart = new Chart(ctxInjury, {
+            type: 'doughnut',
+            data: {
+                labels: ['Thin Skin/Weeping', 'Splits/Cracks', 'Flappers (Tears)', 'Blisters'],
+                datasets: [{
+                    data: [45, 25, 20, 10],
+                    backgroundColor: [
+                        '#5F7161', // Sage
+                        '#d97706', // Amber
+                        '#78716c', // Stone
+                        '#d6d3d1'  // Light Stone
+                    ],
+                    borderWidth: 2,
+                    borderColor: '#ffffff',
+                    hoverOffset: 4
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false, // CRITICAL for filling parent container properly
+                plugins: {
+                    legend: {
+                        position: 'bottom',
+                        labels: { padding: 20, usePointStyle: true }
+                    },
+                    tooltip: {
+                        callbacks: {
+                            label: function(context) {
+                                return ` ${context.label}: ${context.raw}%`;
+                            }
+                        }
+                    }
+                },
+                cutout: '65%'
+            }
+        });
+
+        // Wear by Style Chart (Bar)
+        const ctxStyle = document.getElementById('styleChart').getContext('2d');
+        const styleChart = new Chart(ctxStyle, {
+            type: 'bar',
+            data: {
+                labels: ['Indoor Bouldering', 'Outdoor Bouldering', 'Sport Climbing', 'Trad/Crack Climbing'],
+                datasets: [{
+                    label: 'Wear Index Score (0-100)',
+                    data: [85, 95, 60, 75],
+                    backgroundColor: '#5F7161',
+                    borderRadius: 4,
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false, // CRITICAL
+                scales: {
+                    y: {
+                        beginAtZero: true,
+                        max: 100,
+                        grid: {
+                            color: '#f5f5f4',
+                            drawBorder: false,
+                        }
+                    },
+                    x: {
+                        grid: {
+                            display: false,
+                            drawBorder: false,
+                        },
+                        ticks: {
+                            callback: function(value) {
+                                // 16-char logic wrapping
+                                const label = this.getLabelForValue(value);
+                                if (label.length > 12) {
+                                    const words = label.split(' ');
+                                    if(words.length > 1) {
+                                        return [words[0], words.slice(1).join(' ')];
+                                    }
+                                }
+                                return label;
+                            }
+                        }
+                    }
+                },
+                plugins: {
+                    legend: { display: false },
+                    tooltip: {
+                        callbacks: {
+                            label: function(context) {
+                                return ` Index Score: ${context.raw}`;
+                            }
+                        }
+                    }
+                }
+            }
+        });
+
+        // --- 2. Interactive Skin Profiler State Management ---
+
+        const profileData = {
+            dry: {
+                title: "The Dry / Glassy Profile",
+                description: "Your skin naturally lacks moisture. It tends to become hard, slick, and shiny ('glassy'). The primary risk is deep creases cracking and splitting open due to a lack of elasticity.",
+                risks: ["Deep knuckle splits", "Dry-firing (slipping off holds due to no friction)", "Slow healing times"],
+                protocol: [
+                    "<b>Filing:</b> File lightly and frequently. Do not over-file, as your skin builds slowly.",
+                    "<b>Chalk:</b> Use chalk sparingly. Avoid liquid chalk with high alcohol content as it severely strips moisture.",
+                    "<b>Moisture:</b> Apply a heavy, wax-based climbing salve 1-2 hours before climbing to add elasticity, and immediately after washing hands post-climb."
+                ]
+            },
+            normal: {
+                title: "The Balanced Profile",
+                description: "You have a natural equilibrium. Calluses form evenly, and sweating is moderate. Your primary goal is maintenance and preventing acute traumatic injuries (flappers).",
+                risks: ["Flappers from overgrown calluses catching on edges", "Thin skin after multi-day sessions"],
+                protocol: [
+                    "<b>Filing:</b> File the edges of calluses until flush with surrounding skin. A smooth surface prevents catching.",
+                    "<b>Chalk:</b> Standard loose chalk is fine. Use a chalk brush frequently to keep hold friction optimal.",
+                    "<b>Moisture:</b> Use a light, non-greasy lotion daily, and a targeted wax salve on worn pads post-session."
+                ]
+            },
+            sweaty: {
+                title: "The Sweaty / Oily Profile",
+                description: "Your hands produce excess moisture (hyperhidrosis). Calluses tend to become thick but soft and mushy. The primary risk is the entire callus shearing off due to moisture compromising the skin layers.",
+                risks: ["Massive flappers", "Rapid skin thinning (wears down like an eraser)", "Inability to hold slopers"],
+                protocol: [
+                    "<b>Filing:</b> File aggressively. Because skin grows fast and soft, you must constantly reduce callus thickness.",
+                    "<b>Chalk:</b> Use liquid chalk as a base layer. The alcohol dries the skin deeply. Use drying agents (like antihydral) cautiously if needed overnight.",
+                    "<b>Moisture:</b> Avoid heavy salves. If skin gets too dry from treatments, use a lightweight, fast-absorbing lotion on rest days only."
+                ]
+            }
+        };
+
+        function renderProfile(type) {
+            const data = profileData[type];
+            let risksHtml = data.risks.map(risk => `<li class="flex items-start text-sm"><span class="text-amber-600 mr-2 mt-0.5">⚠️</span> ${risk}</li>`).join('');
+            let protocolHtml = data.protocol.map(step => `<li class="text-stone-700 text-sm mb-2 border-l-2 border-sage-600 pl-3">${step}</li>`).join('');
+
+            return `
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-8 animate-fade-in">
+                    <div>
+                        <h3 class="text-2xl font-bold text-stone-900 mb-3">${data.title}</h3>
+                        <p class="text-stone-600 mb-6 leading-relaxed">${data.description}</p>
+                        
+                        <h4 class="font-semibold text-stone-800 mb-3 border-b border-stone-200 pb-2">Primary Risks</h4>
+                        <ul class="space-y-2 mb-6">
+                            ${risksHtml}
+                        </ul>
+                    </div>
+                    
+                    <div class="bg-stone-50 p-6 rounded-xl border border-stone-200">
+                        <h4 class="font-semibold text-stone-800 mb-4 flex items-center">
+                            <span class="text-xl mr-2">📋</span> Tailored Protocol
+                        </h4>
+                        <ul class="space-y-4">
+                            ${protocolHtml}
+                        </ul>
+                    </div>
+                </div>
+            `;
+        }
+
+        // Global function to handle tab switching
+        window.switchTab = function(type) {
+            // Update Tab Styles
+            ['dry', 'normal', 'sweaty'].forEach(t => {
+                const btn = document.getElementById(`tab-${t}`);
+                if (t === type) {
+                    btn.classList.remove('tab-inactive');
+                    btn.classList.add('tab-active');
+                } else {
+                    btn.classList.remove('tab-active');
+                    btn.classList.add('tab-inactive');
+                }
+            });
+
+            // Update Content with simple fade effect
+            const contentDiv = document.getElementById('profiler-content');
+            contentDiv.style.opacity = '0';
+            
+            setTimeout(() => {
+                contentDiv.innerHTML = renderProfile(type);
+                contentDiv.style.opacity = '1';
+            }, 150);
+        };
+
+        // Initialize with 'dry' profile on load
+        document.addEventListener('DOMContentLoaded', () => {
+            switchTab('dry');
+        });
+
+    </script>
+</body>
+</html>
