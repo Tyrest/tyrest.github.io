@@ -1,0 +1,1005 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+	<meta charset="UTF-8">
+	<meta name="viewport" content="width=device-width, initial-scale=1.0">
+	<title>Sentiment Labeler</title>
+	<style>
+		:root {
+			--bg: #f2efe8;
+			--card: #fffdfa;
+			--ink: #2f2924;
+			--muted: #6b5e55;
+			--accent: #0d7a63;
+			--accent-2: #d6842a;
+			--line: #d8cfc3;
+			--warn: #b23a3a;
+		}
+
+		* {
+			box-sizing: border-box;
+		}
+
+		body {
+			margin: 0;
+			font-family: "Segoe UI", Tahoma, Geneva, Verdana, sans-serif;
+			color: var(--ink);
+			background:
+				radial-gradient(circle at 15% 10%, #f7dcb6 0, transparent 33%),
+				radial-gradient(circle at 95% 85%, #c9ece3 0, transparent 30%),
+				var(--bg);
+			min-height: 100vh;
+		}
+
+		.shell {
+			max-width: 1200px;
+			margin: 0 auto;
+			padding: 24px;
+		}
+
+		h1 {
+			margin: 0 0 10px;
+			font-size: 1.9rem;
+			letter-spacing: 0.02em;
+		}
+
+		.sub {
+			margin: 0 0 20px;
+			color: var(--muted);
+		}
+
+		.panel {
+			background: var(--card);
+			border: 1px solid var(--line);
+			border-radius: 12px;
+			padding: 14px;
+			margin-bottom: 14px;
+			box-shadow: 0 8px 20px rgba(47, 41, 36, 0.06);
+		}
+
+		.grid {
+			display: grid;
+			grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+			gap: 10px;
+			align-items: end;
+		}
+
+		label {
+			display: block;
+			font-size: 0.86rem;
+			margin-bottom: 6px;
+			color: var(--muted);
+		}
+
+		input[type="text"],
+		input[type="file"],
+		select,
+		textarea {
+			width: 100%;
+			border: 1px solid var(--line);
+			background: #fff;
+			border-radius: 8px;
+			padding: 9px 10px;
+			color: var(--ink);
+			font: inherit;
+		}
+
+		.actions {
+			display: flex;
+			flex-wrap: wrap;
+			gap: 8px;
+			margin-top: 10px;
+		}
+
+		button {
+			border: 1px solid transparent;
+			border-radius: 9px;
+			padding: 9px 12px;
+			font: inherit;
+			cursor: pointer;
+			transition: transform 120ms ease, opacity 120ms ease;
+		}
+
+		button:hover {
+			transform: translateY(-1px);
+		}
+
+		.btn-primary {
+			background: var(--accent);
+			color: #fff;
+		}
+
+		.btn-secondary {
+			background: #fff;
+			color: var(--ink);
+			border-color: var(--line);
+		}
+
+		.btn-warn {
+			background: #fff4f4;
+			color: var(--warn);
+			border-color: #e2b8b8;
+		}
+
+		.view-toggle {
+			display: flex;
+			gap: 8px;
+			margin-bottom: 10px;
+			flex-wrap: wrap;
+		}
+
+		.view-toggle button.active {
+			background: var(--accent-2);
+			color: #fff;
+		}
+
+		.status {
+			font-size: 0.9rem;
+			color: var(--muted);
+			margin-top: 8px;
+			min-height: 1.2em;
+		}
+
+		.table-wrap {
+			overflow: auto;
+			max-height: 56vh;
+			border: 1px solid var(--line);
+			border-radius: 10px;
+		}
+
+		table {
+			width: 100%;
+			border-collapse: collapse;
+			min-width: 900px;
+		}
+
+		th,
+		td {
+			border-bottom: 1px solid var(--line);
+			vertical-align: top;
+			text-align: left;
+			padding: 8px;
+			font-size: 0.9rem;
+		}
+
+		thead th {
+			position: sticky;
+			top: 0;
+			z-index: 2;
+			background: #f8f4ed;
+		}
+
+		tr.row-clickable {
+			cursor: pointer;
+		}
+
+		tr.row-clickable:hover {
+			background: #f5f7f8;
+		}
+
+		.pill {
+			display: inline-block;
+			border-radius: 999px;
+			padding: 2px 8px;
+			font-size: 0.75rem;
+			line-height: 1.4;
+			border: 1px solid var(--line);
+			background: #fff;
+		}
+
+		.pill.labelled {
+			background: #e9f7f3;
+			border-color: #b9e0d4;
+			color: #0c5d4b;
+		}
+
+		.condensed,
+		.single {
+			display: none;
+		}
+
+		.single.active,
+		.condensed.active {
+			display: block;
+		}
+
+		.single-meta {
+			display: grid;
+			grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
+			gap: 8px;
+			margin-bottom: 10px;
+		}
+
+		.meta-card {
+			background: #f7f3ec;
+			border: 1px solid var(--line);
+			border-radius: 8px;
+			padding: 8px;
+		}
+
+		.meta-title {
+			color: var(--muted);
+			font-size: 0.75rem;
+			text-transform: uppercase;
+			letter-spacing: 0.04em;
+			margin-bottom: 4px;
+		}
+
+		.task-box {
+			border: 1px solid var(--line);
+			border-radius: 8px;
+			background: #fff;
+			padding: 10px;
+			max-height: 45vh;
+			overflow: auto;
+			white-space: pre-wrap;
+			line-height: 1.35;
+			font-family: "Courier New", Courier, monospace;
+			font-size: 0.86rem;
+		}
+
+		.system-box {
+			border: 1px solid var(--line);
+			border-radius: 8px;
+			background: #fff;
+			padding: 10px;
+			max-height: 26vh;
+			overflow: auto;
+			white-space: pre-wrap;
+			line-height: 1.35;
+			font-family: "Courier New", Courier, monospace;
+			font-size: 0.84rem;
+			margin-bottom: 10px;
+		}
+
+		.hotkeys {
+			display: grid;
+			grid-template-columns: repeat(auto-fit, minmax(170px, 1fr));
+			gap: 6px;
+			margin: 10px 0;
+		}
+
+		.hotkey-btn {
+			border: 1px solid var(--line);
+			background: #fff;
+			padding: 10px;
+			border-radius: 8px;
+			text-align: left;
+		}
+
+		.hotkey-btn.active {
+			border-color: #9cd5c8;
+			background: #e6f5f0;
+		}
+
+		.small {
+			font-size: 0.82rem;
+			color: var(--muted);
+		}
+
+		.kbd {
+			border: 1px solid #c9c3bb;
+			border-bottom-width: 2px;
+			border-radius: 5px;
+			padding: 0 6px;
+			background: #fff;
+			font-family: "Courier New", Courier, monospace;
+			font-size: 0.82rem;
+		}
+	</style>
+</head>
+<body>
+	<div class="shell">
+		<h1>Sentiment Labeler</h1>
+		<p class="sub">Load your three JSONL files, label in bulk or one-by-one, and export your own labels.</p>
+
+		<div class="panel">
+			<div class="grid">
+				<div>
+					<label for="dataFile">JSONL file</label>
+					<input id="dataFile" type="file" accept=".jsonl,application/json,text/plain">
+				</div>
+				<div>
+					<label for="labelColumn">Your label column name</label>
+					<input id="labelColumn" type="text" value="manual_label" placeholder="e.g. tyler_label">
+				</div>
+			</div>
+			<div class="actions">
+				<button id="loadBtn" class="btn-primary" type="button">Load selected file</button>
+				<button id="clearSavedBtn" class="btn-warn" type="button">Clear saved labels for loaded set</button>
+			</div>
+			<div id="status" class="status"></div>
+		</div>
+
+		<div class="panel">
+			<div class="view-toggle">
+				<button id="showCondensedBtn" class="btn-secondary active" type="button">Condensed view</button>
+				<button id="showSingleBtn" class="btn-secondary" type="button">Single-item view</button>
+			</div>
+			<div class="grid" style="margin-bottom: 10px;">
+				<div>
+					<label for="filterSource">Filter source</label>
+					<select id="filterSource">
+						<option value="ALL">All</option>
+						<option value="news">news</option>
+						<option value="reddit">reddit</option>
+						<option value="past_cases">past_cases</option>
+					</select>
+				</div>
+				<div>
+					<label for="searchInput">Search task text / id</label>
+					<input id="searchInput" type="text" placeholder="search words...">
+				</div>
+				<div>
+					<label for="jumpTo">Jump to record index</label>
+					<input id="jumpTo" type="text" placeholder="e.g. 120">
+				</div>
+			</div>
+
+			<div id="condensedView" class="condensed active">
+				<div class="small" id="counts"></div>
+				<div class="table-wrap" style="margin-top: 8px;">
+					<table>
+						<thead>
+							<tr>
+								<th>#</th>
+								<th>Source</th>
+								<th>Record ID</th>
+								<th>Original sentiment</th>
+								<th>Your label</th>
+								<th>System prompt excerpt</th>
+								<th>Task excerpt</th>
+							</tr>
+						</thead>
+						<tbody id="rows"></tbody>
+					</table>
+				</div>
+			</div>
+
+			<div id="singleView" class="single">
+				<div class="single-meta">
+					<div class="meta-card">
+						<div class="meta-title">Progress</div>
+						<div id="singleProgress">0 / 0</div>
+					</div>
+					<div class="meta-card">
+						<div class="meta-title">Source</div>
+						<div id="singleSource">-</div>
+					</div>
+					<div class="meta-card">
+						<div class="meta-title">Record ID</div>
+						<div id="singleId">-</div>
+					</div>
+					<div class="meta-card">
+						<div class="meta-title">Original sentiment</div>
+						<div id="singleOriginal">-</div>
+					</div>
+				</div>
+
+				<div class="hotkeys">
+					<button type="button" class="hotkey-btn" data-label="POSITIVE"><strong>1</strong> POSITIVE</button>
+					<button type="button" class="hotkey-btn" data-label="NEUTRAL"><strong>2</strong> NEUTRAL</button>
+					<button type="button" class="hotkey-btn" data-label="NEGATIVE"><strong>3</strong> NEGATIVE</button>
+					<button type="button" class="hotkey-btn" data-label="IRRELEVANT"><strong>4</strong> IRRELEVANT</button>
+				</div>
+
+				<div class="small" style="margin-bottom: 8px;">
+					Shortcuts: <span class="kbd">1</span> <span class="kbd">2</span> <span class="kbd">3</span> <span class="kbd">4</span> set label,
+					<span class="kbd">n</span> next,
+					<span class="kbd">p</span> previous.
+				</div>
+
+				<label class="small" for="singleSystemPrompt">System prompt</label>
+				<div class="system-box" id="singleSystemPrompt"></div>
+
+				<div class="task-box" id="singleTask"></div>
+
+				<div class="actions">
+					<button id="prevBtn" class="btn-secondary" type="button">Previous</button>
+					<button id="nextBtn" class="btn-secondary" type="button">Next</button>
+				</div>
+			</div>
+		</div>
+
+		<div class="panel">
+			<div class="actions">
+				<button id="exportJsonBtn" class="btn-primary" type="button">Export JSONL</button>
+				<button id="exportCsvBtn" class="btn-secondary" type="button">Export CSV</button>
+			</div>
+			<div class="small" id="exportInfo">Exports include all original columns + your custom label column.</div>
+		</div>
+	</div>
+
+	<script>
+		(function () {
+			"use strict";
+
+			var LABEL_BY_KEY = {
+				"1": "POSITIVE",
+				"2": "NEUTRAL",
+				"3": "NEGATIVE",
+				"4": "IRRELEVANT"
+			};
+
+			var state = {
+				datasetId: "",
+				records: [],
+				filteredIndexes: [],
+				labelsById: {},
+				currentFilteredPos: 0,
+				view: "condensed"
+			};
+
+			var ui = {
+				dataFile: document.getElementById("dataFile"),
+				labelColumn: document.getElementById("labelColumn"),
+				loadBtn: document.getElementById("loadBtn"),
+				clearSavedBtn: document.getElementById("clearSavedBtn"),
+				status: document.getElementById("status"),
+				showCondensedBtn: document.getElementById("showCondensedBtn"),
+				showSingleBtn: document.getElementById("showSingleBtn"),
+				condensedView: document.getElementById("condensedView"),
+				singleView: document.getElementById("singleView"),
+				filterSource: document.getElementById("filterSource"),
+				searchInput: document.getElementById("searchInput"),
+				jumpTo: document.getElementById("jumpTo"),
+				counts: document.getElementById("counts"),
+				rows: document.getElementById("rows"),
+				singleProgress: document.getElementById("singleProgress"),
+				singleSource: document.getElementById("singleSource"),
+				singleId: document.getElementById("singleId"),
+				singleOriginal: document.getElementById("singleOriginal"),
+				singleSystemPrompt: document.getElementById("singleSystemPrompt"),
+				singleTask: document.getElementById("singleTask"),
+				prevBtn: document.getElementById("prevBtn"),
+				nextBtn: document.getElementById("nextBtn"),
+				hotkeyButtons: Array.prototype.slice.call(document.querySelectorAll(".hotkey-btn")),
+				exportJsonBtn: document.getElementById("exportJsonBtn"),
+				exportCsvBtn: document.getElementById("exportCsvBtn"),
+				exportInfo: document.getElementById("exportInfo")
+			};
+
+			wireEvents();
+
+			function wireEvents() {
+				ui.loadBtn.addEventListener("click", loadFromSelectedFiles);
+				ui.clearSavedBtn.addEventListener("click", clearSavedLabels);
+
+				ui.showCondensedBtn.addEventListener("click", function () {
+					setView("condensed");
+				});
+				ui.showSingleBtn.addEventListener("click", function () {
+					setView("single");
+				});
+
+				ui.filterSource.addEventListener("change", function () {
+					applyFiltersAndRender();
+				});
+				ui.searchInput.addEventListener("input", function () {
+					applyFiltersAndRender();
+				});
+				ui.jumpTo.addEventListener("keydown", function (ev) {
+					if (ev.key !== "Enter") {
+						return;
+					}
+					var value = parseInt(ui.jumpTo.value.trim(), 10);
+					if (!Number.isInteger(value) || value < 1 || value > state.filteredIndexes.length) {
+						setStatus("Jump value must be between 1 and " + state.filteredIndexes.length + ".", true);
+						return;
+					}
+					state.currentFilteredPos = value - 1;
+					setView("single");
+					renderSingle();
+					setStatus("Jumped to filtered record " + value + ".");
+				});
+
+				ui.prevBtn.addEventListener("click", goPrevious);
+				ui.nextBtn.addEventListener("click", goNext);
+
+				ui.hotkeyButtons.forEach(function (btn) {
+					btn.addEventListener("click", function () {
+						applyLabelToCurrent(btn.getAttribute("data-label"), true);
+					});
+				});
+
+				ui.labelColumn.addEventListener("input", function () {
+					var col = getLabelColumnName();
+					ui.exportInfo.textContent = "Exports include all original columns + " + col + ".";
+				});
+
+				ui.exportJsonBtn.addEventListener("click", function () {
+					exportAsJSONL();
+				});
+				ui.exportCsvBtn.addEventListener("click", function () {
+					exportAsCSV();
+				});
+
+				window.addEventListener("keydown", onGlobalKeyDown);
+			}
+
+			function onGlobalKeyDown(ev) {
+				if (state.view !== "single") {
+					return;
+				}
+
+				var tag = (ev.target && ev.target.tagName) ? ev.target.tagName.toLowerCase() : "";
+				if (tag === "input" || tag === "textarea") {
+					return;
+				}
+
+				var key = ev.key.toLowerCase();
+				if (LABEL_BY_KEY[key]) {
+					ev.preventDefault();
+					applyLabelToCurrent(LABEL_BY_KEY[key], true);
+					return;
+				}
+				if (key === "n") {
+					ev.preventDefault();
+					goNext();
+					return;
+				}
+				if (key === "p") {
+					ev.preventDefault();
+					goPrevious();
+				}
+			}
+
+			function setStatus(message, isError) {
+				ui.status.textContent = message || "";
+				ui.status.style.color = isError ? "#b23a3a" : "#6b5e55";
+			}
+
+			function getLabelColumnName() {
+				var raw = (ui.labelColumn.value || "").trim();
+				if (!raw) {
+					return "manual_label";
+				}
+				return raw.replace(/\s+/g, "_");
+			}
+
+			async function loadFromSelectedFiles() {
+				if (!ui.dataFile.files || !ui.dataFile.files[0]) {
+					setStatus("Select one JSONL file first.", true);
+					return;
+				}
+
+				try {
+					setStatus("Loading selected file...");
+					var file = ui.dataFile.files[0];
+					var loaded = await parseJSONLText(await file.text(), "unknown", file.name);
+					finalizeLoad(loaded, file.name + ":" + file.size);
+				} catch (err) {
+					setStatus("Could not load selected file: " + err.message, true);
+				}
+			}
+
+			async function parseJSONLText(text, fallbackSource, fileName) {
+				var lines = text.split(/\r?\n/);
+				var result = [];
+				var parseErrors = 0;
+				for (var i = 0; i < lines.length; i += 1) {
+					var line = lines[i].trim();
+					if (!line) {
+						continue;
+					}
+					try {
+						var obj = JSON.parse(line);
+						var source = String(obj.source || fallbackSource || "unknown").trim() || "unknown";
+						var id = pickRecordId(obj, source, result.length);
+						result.push({
+							__id: source + "-" + id + "-" + result.length,
+							__source: source,
+							__file: fileName,
+							__index: result.length,
+							__taskPreview: makePreview(obj.task_text),
+							__raw: obj
+						});
+					} catch (_err) {
+						parseErrors += 1;
+					}
+				}
+				if (parseErrors > 0) {
+					setStatus("Loaded with " + parseErrors + " parse errors skipped.", true);
+				}
+				return result;
+			}
+
+			function pickRecordId(obj, source, index) {
+				if (obj.article_id !== undefined && obj.article_id !== null && String(obj.article_id).trim() !== "") {
+					return String(obj.article_id).trim();
+				}
+				if (obj.request_id) {
+					return String(obj.request_id).trim();
+				}
+				if (obj.id) {
+					return String(obj.id).trim();
+				}
+				return source + "_" + (index + 1);
+			}
+
+			function makePreview(taskText) {
+				if (!taskText) {
+					return "";
+				}
+				var flat = String(taskText).replace(/\s+/g, " ").trim();
+				if (flat.length <= 180) {
+					return flat;
+				}
+				return flat.slice(0, 180) + "...";
+			}
+
+			function finalizeLoad(loadedRows, datasetFingerprint) {
+				state.records = loadedRows;
+				state.datasetId = "sentiment_labeler::" + datasetFingerprint;
+				state.currentFilteredPos = 0;
+				restoreSavedLabels();
+				applyFiltersAndRender();
+				setView("condensed");
+				setStatus("Loaded " + state.records.length + " records.");
+			}
+
+			function clearSavedLabels() {
+				if (!state.datasetId) {
+					setStatus("Load files before clearing saved labels.", true);
+					return;
+				}
+				window.localStorage.removeItem(state.datasetId);
+				state.labelsById = {};
+				renderCondensed();
+				renderSingle();
+				setStatus("Saved labels cleared for current dataset.");
+			}
+
+			function restoreSavedLabels() {
+				state.labelsById = {};
+				if (!state.datasetId) {
+					return;
+				}
+				var raw = window.localStorage.getItem(state.datasetId);
+				if (!raw) {
+					return;
+				}
+				try {
+					var parsed = JSON.parse(raw);
+					if (parsed && typeof parsed === "object") {
+						state.labelsById = parsed;
+					}
+				} catch (_err) {
+					state.labelsById = {};
+				}
+			}
+
+			function saveLabels() {
+				if (!state.datasetId) {
+					return;
+				}
+				window.localStorage.setItem(state.datasetId, JSON.stringify(state.labelsById));
+			}
+
+			function applyFiltersAndRender() {
+				var sourceFilter = ui.filterSource.value;
+				var q = ui.searchInput.value.trim().toLowerCase();
+				state.filteredIndexes = [];
+
+				for (var i = 0; i < state.records.length; i += 1) {
+					var record = state.records[i];
+					if (sourceFilter !== "ALL" && record.__source !== sourceFilter) {
+						continue;
+					}
+					if (q) {
+						var hay = (
+							record.__id + "\n" +
+							record.__taskPreview + "\n" +
+							(record.__raw.task_text || "") + "\n" +
+							(record.__raw.system_prompt || "") + "\n" +
+							(record.__raw.sentiment || "")
+						).toLowerCase();
+						if (hay.indexOf(q) === -1) {
+							continue;
+						}
+					}
+					state.filteredIndexes.push(i);
+				}
+
+				if (state.currentFilteredPos > state.filteredIndexes.length - 1) {
+					state.currentFilteredPos = Math.max(0, state.filteredIndexes.length - 1);
+				}
+
+				renderCondensed();
+				renderSingle();
+			}
+
+			function renderCondensed() {
+				var countsBySource = {};
+				var labelledCount = 0;
+
+				state.records.forEach(function (r) {
+					countsBySource[r.__source] = (countsBySource[r.__source] || 0) + 1;
+					if (state.labelsById[r.__id] && state.labelsById[r.__id].label) {
+						labelledCount += 1;
+					}
+				});
+
+				ui.counts.textContent =
+					"Loaded: " + state.records.length +
+					" | Filtered: " + state.filteredIndexes.length +
+					" | Labelled: " + labelledCount +
+					" | By source: " + Object.keys(countsBySource).sort().map(function (k) {
+						return k + "=" + countsBySource[k];
+					}).join(" ");
+
+				ui.rows.innerHTML = "";
+				for (var i = 0; i < state.filteredIndexes.length; i += 1) {
+					var idx = state.filteredIndexes[i];
+					var rec = state.records[idx];
+					var labelInfo = state.labelsById[rec.__id] || {};
+					var tr = document.createElement("tr");
+					tr.className = "row-clickable";
+					tr.addEventListener("click", makeRowClickHandler(i));
+
+					tr.innerHTML = "" +
+						"<td>" + escapeHtml(String(i + 1)) + "</td>" +
+						"<td><span class='pill'>" + escapeHtml(rec.__source) + "</span></td>" +
+						"<td>" + escapeHtml(rec.__id) + "</td>" +
+						"<td>" + escapeHtml(String(rec.__raw.sentiment || "")) + "</td>" +
+						"<td>" + labelPillHtml(labelInfo.label) + "</td>" +
+						"<td>" + escapeHtml(makePreview(rec.__raw.system_prompt)) + "</td>" +
+						"<td>" + escapeHtml(rec.__taskPreview) + "</td>";
+					ui.rows.appendChild(tr);
+				}
+			}
+
+			function makeRowClickHandler(filteredPos) {
+				return function () {
+					state.currentFilteredPos = filteredPos;
+					setView("single");
+					renderSingle();
+				};
+			}
+
+			function labelPillHtml(value) {
+				if (!value) {
+					return "<span class='pill'>unlabeled</span>";
+				}
+				return "<span class='pill labelled'>" + escapeHtml(value) + "</span>";
+			}
+
+			function renderSingle() {
+				if (state.filteredIndexes.length === 0) {
+					ui.singleProgress.textContent = "0 / 0";
+					ui.singleSource.textContent = "-";
+					ui.singleId.textContent = "-";
+					ui.singleOriginal.textContent = "-";
+					ui.singleSystemPrompt.textContent = "-";
+					ui.singleTask.textContent = "No records match your current filter/search.";
+					setHotkeyButtonState("");
+					return;
+				}
+
+				var record = currentRecord();
+				var labelInfo = state.labelsById[record.__id] || { label: "", note: "" };
+
+				ui.singleProgress.textContent =
+					String(state.currentFilteredPos + 1) + " / " + String(state.filteredIndexes.length);
+				ui.singleSource.textContent = record.__source;
+				ui.singleId.textContent = record.__id;
+				ui.singleOriginal.textContent = String(record.__raw.sentiment || "");
+				ui.singleSystemPrompt.textContent = String(record.__raw.system_prompt || "");
+				ui.singleTask.textContent = String(record.__raw.task_text || "");
+
+				setHotkeyButtonState(labelInfo.label || "");
+			}
+
+			function currentRecord() {
+				var idx = state.filteredIndexes[state.currentFilteredPos];
+				return state.records[idx];
+			}
+
+			function setHotkeyButtonState(activeLabel) {
+				ui.hotkeyButtons.forEach(function (btn) {
+					var isActive = btn.getAttribute("data-label") === activeLabel;
+					if (isActive) {
+						btn.classList.add("active");
+					} else {
+						btn.classList.remove("active");
+					}
+				});
+			}
+
+			function applyLabelToCurrent(label, autoNext) {
+				if (state.filteredIndexes.length === 0) {
+					return;
+				}
+				var rec = currentRecord();
+				var prev = state.labelsById[rec.__id] || {};
+				state.labelsById[rec.__id] = {
+					label: label
+				};
+
+				saveLabels();
+				renderCondensed();
+				renderSingle();
+
+				if (autoNext) {
+					goNext();
+				}
+			}
+
+			function goNext() {
+				if (state.filteredIndexes.length === 0) {
+					return;
+				}
+				state.currentFilteredPos = Math.min(
+					state.filteredIndexes.length - 1,
+					state.currentFilteredPos + 1
+				);
+				renderSingle();
+			}
+
+			function goPrevious() {
+				if (state.filteredIndexes.length === 0) {
+					return;
+				}
+				state.currentFilteredPos = Math.max(0, state.currentFilteredPos - 1);
+				renderSingle();
+			}
+
+			function setView(nextView) {
+				state.view = nextView;
+				var condensed = nextView === "condensed";
+
+				ui.condensedView.classList.toggle("active", condensed);
+				ui.singleView.classList.toggle("active", !condensed);
+				ui.showCondensedBtn.classList.toggle("active", condensed);
+				ui.showSingleBtn.classList.toggle("active", !condensed);
+
+				if (!condensed) {
+					renderSingle();
+				}
+			}
+
+			function exportAsJSONL() {
+				if (state.records.length === 0) {
+					setStatus("Nothing loaded yet.", true);
+					return;
+				}
+				var col = getLabelColumnName();
+				var lines = state.records.map(function (rec) {
+					var labelInfo = state.labelsById[rec.__id] || {};
+					var merged = copyObject(rec.__raw);
+					merged[col] = labelInfo.label || "";
+					merged.manual_record_id = rec.__id;
+					merged.manual_source = rec.__source;
+					return JSON.stringify(merged);
+				});
+
+				downloadBlob(lines.join("\n"), "application/json", makeExportName("jsonl"));
+				setStatus("Exported JSONL.");
+			}
+
+			function exportAsCSV() {
+				if (state.records.length === 0) {
+					setStatus("Nothing loaded yet.", true);
+					return;
+				}
+
+				var col = getLabelColumnName();
+				var keys = collectAllKeys(state.records.map(function (rec) { return rec.__raw; }));
+				if (keys.indexOf(col) === -1) {
+					keys.push(col);
+				}
+				if (keys.indexOf("manual_record_id") === -1) {
+					keys.push("manual_record_id");
+				}
+				if (keys.indexOf("manual_source") === -1) {
+					keys.push("manual_source");
+				}
+
+				var rows = [keys.join(",")];
+				state.records.forEach(function (rec) {
+					var labelInfo = state.labelsById[rec.__id] || {};
+					var merged = copyObject(rec.__raw);
+					merged[col] = labelInfo.label || "";
+					merged.manual_record_id = rec.__id;
+					merged.manual_source = rec.__source;
+
+					var line = keys.map(function (k) {
+						return csvEscape(valueToString(merged[k]));
+					}).join(",");
+					rows.push(line);
+				});
+
+				downloadBlob(rows.join("\n"), "text/csv", makeExportName("csv"));
+				setStatus("Exported CSV.");
+			}
+
+			function makeExportName(ext) {
+				var now = new Date();
+				var stamp = [
+					now.getFullYear(),
+					pad2(now.getMonth() + 1),
+					pad2(now.getDate()),
+					"_",
+					pad2(now.getHours()),
+					pad2(now.getMinutes()),
+					pad2(now.getSeconds())
+				].join("");
+				return "sentiment_labels_" + getLabelColumnName() + "_" + stamp + "." + ext;
+			}
+
+			function pad2(n) {
+				return String(n).padStart(2, "0");
+			}
+
+			function downloadBlob(content, mime, fileName) {
+				var blob = new Blob([content], { type: mime });
+				var url = URL.createObjectURL(blob);
+				var a = document.createElement("a");
+				a.href = url;
+				a.download = fileName;
+				document.body.appendChild(a);
+				a.click();
+				a.remove();
+				URL.revokeObjectURL(url);
+			}
+
+			function collectAllKeys(items) {
+				var seen = {};
+				var out = [];
+				items.forEach(function (obj) {
+					Object.keys(obj || {}).forEach(function (k) {
+						if (!seen[k]) {
+							seen[k] = true;
+							out.push(k);
+						}
+					});
+				});
+				return out;
+			}
+
+			function csvEscape(raw) {
+				var s = String(raw);
+				if (s.indexOf("\"") !== -1) {
+					s = s.replace(/\"/g, "\"\"");
+				}
+				if (/[",\n\r]/.test(s)) {
+					return "\"" + s + "\"";
+				}
+				return s;
+			}
+
+			function valueToString(v) {
+				if (v === null || v === undefined) {
+					return "";
+				}
+				if (typeof v === "string") {
+					return v;
+				}
+				if (typeof v === "number" || typeof v === "boolean") {
+					return String(v);
+				}
+				return JSON.stringify(v);
+			}
+
+			function copyObject(obj) {
+				var out = {};
+				Object.keys(obj || {}).forEach(function (k) {
+					out[k] = obj[k];
+				});
+				return out;
+			}
+
+			function escapeHtml(text) {
+				return String(text)
+					.replace(/&/g, "&amp;")
+					.replace(/</g, "&lt;")
+					.replace(/>/g, "&gt;")
+					.replace(/\"/g, "&quot;")
+					.replace(/'/g, "&#039;");
+			}
+
+			setStatus("Load three files to begin.");
+		})();
+	</script>
+</body>
+</html>
